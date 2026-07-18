@@ -6,49 +6,97 @@
 <title>Het Kattenhuis van Sep</title>
 <style>
   :root {
-    --blauw: #1e90ff;
+    --blauw: #2b8cff;
     --groen: #2ecc40;
     --oranje: #ff851b;
     --geel: #ffd700;
     --rood: #ff4136;
     --paars: #9b59b6;
     --lucht: #7ec8ff;
+    --hout-l: #f2b56f;
+    --hout: #dd9346;
+    --hout-d: #8a4d1d;
     --schaduw: 0 6px 0 rgba(0,0,0,.18);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
   html, body { margin: 0; height: 100%; overflow: hidden; }
   body {
     font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", cursive, sans-serif;
-    background: linear-gradient(#7ec8ff, #d8f3ff 70%, #9be89b);
+    background: linear-gradient(#5db4ff, #a8dcff 55%, #cdf3d0);
     touch-action: none;
   }
-  #app { position: fixed; inset: 0; display: flex; flex-direction: column; }
+  #app { position: fixed; inset: 0; display: flex; flex-direction: column; z-index: 1; }
 
-  /* ---------- algemene knoppen ---------- */
+  /* ---------- decor: zon, wolken, heuvels ---------- */
+  #scenery { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  #sun { position: absolute; top: 3vmin; left: 4vmin; width: 20vmin; height: 20vmin; }
+  #sun-rays {
+    position: absolute; inset: -60%;
+    border-radius: 50%;
+    background: repeating-conic-gradient(rgba(255,216,64,.4) 0 9deg, transparent 9deg 24deg);
+    animation: spin-slow 44s linear infinite;
+  }
+  #sun-core {
+    position: absolute; inset: 14%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff9d6, #ffdf57 55%, #ffb200);
+    box-shadow: 0 0 6vmin rgba(255,200,60,.8);
+  }
+  .cloud {
+    position: absolute;
+    height: 6vmin; width: 17vmin;
+    background: linear-gradient(#ffffff, #eef6ff);
+    border-radius: 999px;
+    opacity: .92;
+    box-shadow: 4.5vmin -2.4vmin 0 -1vmin #fff, -5vmin -1.8vmin 0 -1.6vmin #fff, 0 .6vmin 1.2vmin rgba(60,110,180,.18);
+    animation: cloud-drift linear infinite;
+  }
+  .cloud.c1 { top: 13%; animation-duration: 75s; }
+  .cloud.c2 { top: 30%; height: 4.4vmin; width: 12vmin; animation-duration: 105s; animation-delay: -48s; opacity: .8; }
+  .cloud.c3 { top: 5%; height: 7.5vmin; width: 22vmin; animation-duration: 130s; animation-delay: -90s; }
+  .hill { position: absolute; border-radius: 50%; }
+  .hill.h1 { left: -18vw; bottom: -16vmin; width: 75vw; height: 28vmin; background: linear-gradient(#a1e6a1, #5cb85c); }
+  .hill.h2 { right: -22vw; bottom: -18vmin; width: 80vw; height: 30vmin; background: linear-gradient(#8bd98b, #4aa34a); }
+
+  /* ---------- algemene knoppen (glossy 3D) ---------- */
   button {
     font-family: inherit;
     border: none;
     cursor: pointer;
+    color: inherit;
   }
   .big-btn {
+    position: relative;
     font-size: clamp(20px, 4vmin, 34px);
-    padding: .5em 1em;
+    font-weight: bold;
+    padding: .5em 1.2em;
     border-radius: 999px;
-    background: var(--geel);
-    box-shadow: var(--schaduw);
-    transition: transform .1s;
+    background: linear-gradient(#ffe466, #ffc400 55%, #f0a800);
+    border: 3px solid rgba(255,255,255,.95);
+    box-shadow: 0 .38em 0 rgba(0,0,0,.28), 0 .7em 1.2em rgba(0,0,0,.22), inset 0 .28em 0 rgba(255,255,255,.5);
+    transition: transform .1s, box-shadow .1s;
+    overflow: hidden;
   }
-  .big-btn:active { transform: scale(.93) translateY(3px); box-shadow: none; }
+  .big-btn::after {
+    content: "";
+    position: absolute; top: 6%; left: 8%; right: 8%; height: 38%;
+    border-radius: 999px;
+    background: linear-gradient(rgba(255,255,255,.65), rgba(255,255,255,0));
+    pointer-events: none;
+  }
+  .big-btn:active { transform: translateY(.28em) scale(.97); box-shadow: 0 .1em 0 rgba(0,0,0,.28), inset 0 .28em 0 rgba(255,255,255,.5); }
   .icon-btn {
     font-size: clamp(26px, 5.5vmin, 44px);
     width: 1.9em; height: 1.9em;
     border-radius: 50%;
-    background: #fff;
-    box-shadow: var(--schaduw);
+    background: radial-gradient(circle at 32% 26%, #ffffff, #e4ecf7 70%, #c8d6ea);
+    border: 3px solid rgba(255,255,255,.95);
+    box-shadow: 0 .16em 0 rgba(0,0,0,.25), 0 .4em .8em rgba(0,0,0,.2), inset 0 .12em 0 rgba(255,255,255,.8);
     display: grid; place-items: center;
-    transition: transform .1s;
+    transition: transform .1s, box-shadow .1s;
   }
-  .icon-btn:active { transform: scale(.9); box-shadow: none; }
+  .icon-btn:active { transform: translateY(.12em) scale(.92); box-shadow: 0 .04em 0 rgba(0,0,0,.25); }
+  .icon-btn:hover { transform: scale(1.06); }
 
   /* ---------- kop van elke kamer ---------- */
   .room-top {
@@ -60,34 +108,71 @@
     font-size: clamp(22px, 5vmin, 42px);
     font-weight: bold;
     color: #fff;
-    text-shadow: 2px 3px 0 rgba(0,0,0,.25);
+    -webkit-text-stroke: 1.5px rgba(0,0,0,.18);
+    text-shadow: 0 .35vmin 0 rgba(0,0,0,.3), 0 .7vmin 1.4vmin rgba(0,0,0,.25);
+    transform: rotate(-.6deg);
     flex: 1;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .room-body { flex: 1; position: relative; overflow: hidden; }
+  .room-body::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,.13) 22%, transparent 24%);
+    background-size: 5vmin 5vmin;
+    pointer-events: none;
+  }
 
   /* ---------- start-overlay ---------- */
   #start-overlay {
     position: fixed; inset: 0; z-index: 500;
-    background: linear-gradient(135deg, #1e90ff, #9b59b6);
+    background: radial-gradient(circle at 50% 38%, #6cb9ff, #2b8cff 55%, #1a5bbf);
     display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  #start-overlay::before {
+    content: "";
+    position: absolute; left: 50%; top: 50%;
+    width: 220vmax; height: 220vmax;
+    margin: -110vmax 0 0 -110vmax;
+    background: repeating-conic-gradient(rgba(255,255,255,.13) 0 11deg, transparent 11deg 26deg);
+    animation: spin-slow 40s linear infinite;
   }
   #start-card {
-    background: #fff;
-    border-radius: 4vmin;
-    padding: 4vmin 6vmin;
+    position: relative;
+    background: linear-gradient(#ffffff, #fff2d9);
+    border: .9vmin solid #fff;
+    border-radius: 4.5vmin;
+    padding: 4vmin 6.5vmin;
     text-align: center;
-    box-shadow: 0 12px 0 rgba(0,0,0,.25);
+    box-shadow: 0 1.6vmin 0 rgba(0,0,0,.22), 0 4vmin 8vmin rgba(0,20,60,.45);
     animation: pop-in .5s;
     max-width: 90vw;
   }
-  #start-card h1 {
-    margin: 1vmin 0 2vmin;
-    font-size: clamp(26px, 6vmin, 52px);
-    color: var(--blauw);
+  #start-card::after {
+    content: "⭐";
+    position: absolute; top: -2.6vmin; right: -2vmin;
+    font-size: clamp(30px, 7vmin, 60px);
+    filter: drop-shadow(0 4px 0 rgba(0,0,0,.2));
+    animation: wiggle 2.2s ease-in-out infinite;
   }
-  #start-card .cat-wrap { width: clamp(110px, 24vmin, 200px); margin: 0 auto; animation: floaty 2.5s ease-in-out infinite; }
-  #start-btn { background: var(--groen); color: #fff; font-weight: bold; }
+  #start-card h1 {
+    margin: 1vmin 0 2.4vmin;
+    font-size: clamp(28px, 6.5vmin, 56px);
+    background: linear-gradient(#ff851b, #ff4136);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 3px 0 rgba(0,0,0,.15));
+    letter-spacing: .02em;
+  }
+  #start-card .cat-wrap { width: clamp(110px, 24vmin, 200px); margin: 0 auto; animation: floaty 2.5s ease-in-out infinite; filter: drop-shadow(0 1vmin 1.5vmin rgba(0,0,0,.25)); }
+  #start-btn {
+    background: linear-gradient(#6fe08a, #2ecc40 55%, #1d9e4c);
+    color: #fff;
+    text-shadow: 0 2px 0 rgba(0,0,0,.25);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
 
   /* ---------- geluid-knop ---------- */
   #sound-btn { position: fixed; top: 1.2vmin; right: 1.4vmin; z-index: 400; }
@@ -99,68 +184,140 @@
     font-size: clamp(24px, 5.5vmin, 46px);
     font-weight: bold;
     color: #fff;
-    text-shadow: 3px 3px 0 rgba(0,0,0,.25);
-    padding: 1vmin 12vmin 0.5vmin 2vmin;
+    -webkit-text-stroke: 1.5px rgba(30,80,140,.35);
+    text-shadow: 0 .4vmin 0 rgba(20,70,130,.35), 0 .9vmin 1.8vmin rgba(0,40,90,.3);
+    padding: 1vmin 12vmin 0.5vmin 12vmin;
+    transform: rotate(-.6deg);
   }
   #house {
     flex: 1; display: flex; flex-direction: column;
     width: min(92vw, 130vmin);
     margin: 0 auto;
     min-height: 0;
+    filter: drop-shadow(0 2.2vmin 2.6vmin rgba(20,60,20,.3));
   }
-  #roof {
+  #roof-wrap {
     flex: 0 0 auto;
-    height: clamp(38px, 9vmin, 80px);
-    background: var(--rood);
-    clip-path: polygon(50% 0, 100% 100%, 0 100%);
-    display: flex; align-items: flex-end; justify-content: center;
-    color: #fff; font-weight: bold;
-    font-size: clamp(14px, 3vmin, 26px);
-    text-shadow: 1px 2px 0 rgba(0,0,0,.3);
     position: relative;
+    height: clamp(48px, 11vmin, 96px);
+  }
+  #chimney {
+    position: absolute;
+    left: 72%; bottom: 18%;
+    width: clamp(22px, 5vmin, 44px);
+    height: 88%;
+    background: linear-gradient(90deg, #c05a4e, #9c4238);
+    border-top: .8vmin solid #7d332b;
+    border-radius: .6vmin .6vmin 0 0;
+  }
+  .smoke {
+    position: absolute;
+    left: -30%; bottom: 95%;
+    font-size: clamp(16px, 3.6vmin, 32px);
+    opacity: 0;
+    animation: smoke-rise 3.4s ease-out infinite;
+  }
+  .smoke.s2 { animation-delay: 1.1s; left: 5%; }
+  .smoke.s3 { animation-delay: 2.2s; left: -12%; }
+  #roof {
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(to bottom, rgba(255,255,255,.14) 0 2px, transparent 2px 24%),
+      linear-gradient(#ff7a6e, #d63c3c);
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+  #attic {
+    position: absolute;
+    left: 50%; bottom: 4%;
+    transform: translateX(-50%);
+    width: clamp(30px, 7vmin, 60px);
+    height: clamp(30px, 7vmin, 60px);
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff, #cfe8ff 70%);
+    border: .7vmin solid #ffd93b;
+    box-shadow: 0 .4vmin .8vmin rgba(0,0,0,.3);
+    display: grid; place-items: center;
+    font-size: clamp(16px, 4vmin, 36px);
+    line-height: 1;
   }
   #rooms {
     flex: 1;
-    background: #ffb45e;
-    border: 1.2vmin solid #b06a2a;
+    background:
+      repeating-linear-gradient(to bottom, rgba(120,60,10,.08) 0 2px, transparent 2px 24%),
+      linear-gradient(var(--hout-l), var(--hout));
+    border: 1.2vmin solid var(--hout-d);
     border-top: none;
     border-radius: 0 0 3vmin 3vmin;
+    box-shadow: inset 0 1vmin 0 rgba(255,255,255,.3), inset 0 -1.2vmin 0 rgba(90,45,8,.25);
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    gap: 1.4vmin;
-    padding: 1.6vmin;
+    gap: 1.6vmin;
+    padding: 2vmin;
     min-height: 0;
   }
   .room-door {
-    border-radius: 2vmin;
-    box-shadow: inset 0 -6px 0 rgba(0,0,0,.15), var(--schaduw);
+    position: relative;
+    border-radius: 45% 45% 1.8vmin 1.8vmin / 26% 26% 1.8vmin 1.8vmin;
+    border: .55vmin solid rgba(255,255,255,.9);
+    box-shadow: 0 .7vmin 0 rgba(80,40,5,.35), inset 0 -1.2vmin 0 rgba(0,0,0,.2), inset 0 .8vmin 0 rgba(255,255,255,.3);
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    gap: .4vmin;
+    gap: .8vmin;
     color: #fff;
     font-weight: bold;
-    font-size: clamp(12px, 2.6vmin, 24px);
-    transition: transform .12s;
-    padding: .5vmin;
+    font-size: clamp(12px, 2.5vmin, 23px);
+    transition: transform .12s, box-shadow .12s;
+    padding: .8vmin;
+    overflow: hidden;
   }
-  .room-door:hover { transform: scale(1.05) rotate(-1deg); }
-  .room-door:active { transform: scale(.94); }
-  .room-door .r-icon { font-size: clamp(28px, 7vmin, 64px); line-height: 1.1; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.2)); }
+  .room-door::after {
+    content: "";
+    position: absolute; top: 3%; left: 10%; right: 10%; height: 26%;
+    border-radius: 999px;
+    background: linear-gradient(rgba(255,255,255,.4), rgba(255,255,255,0));
+    pointer-events: none;
+  }
+  .room-door:hover { transform: translateY(-.5vmin) scale(1.04); box-shadow: 0 1.2vmin 0 rgba(80,40,5,.35), 0 1.6vmin 2.4vmin rgba(0,0,0,.25), inset 0 -1.2vmin 0 rgba(0,0,0,.2), inset 0 .8vmin 0 rgba(255,255,255,.3); }
+  .room-door:active { transform: translateY(.3vmin) scale(.96); }
+  .room-door .r-icon {
+    width: clamp(44px, 10vmin, 92px);
+    height: clamp(44px, 10vmin, 92px);
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 28%, #ffffff, #e9eef7 75%);
+    box-shadow: 0 .5vmin 0 rgba(0,0,0,.22), inset 0 -.6vmin 0 rgba(0,0,0,.08);
+    display: grid; place-items: center;
+    font-size: clamp(26px, 6.2vmin, 56px);
+    line-height: 1;
+  }
+  .room-door .r-name {
+    background: linear-gradient(#ffedd1, #fbd39c);
+    color: #7a4a18;
+    border-radius: 999px;
+    padding: .12em .8em;
+    box-shadow: 0 .3vmin 0 rgba(90,50,10,.35);
+    white-space: nowrap;
+  }
   #hub-bottom {
     flex: 0 0 auto;
+    position: relative;
     display: flex; align-items: flex-end; justify-content: center;
     gap: 3vmin;
-    padding: 1vmin 2vmin 1.6vmin;
+    margin-top: 1vmin;
+    padding: .6vmin 2vmin 1.2vmin;
     font-size: clamp(30px, 7vmin, 60px);
+    background: linear-gradient(#6fd873, #33a04a);
+    border-radius: 3vmin 3vmin 0 0;
+    box-shadow: inset 0 .8vmin 0 rgba(255,255,255,.3);
   }
+  .veld-bloem { font-size: .55em; align-self: center; filter: drop-shadow(1px 2px 0 rgba(0,60,0,.25)); }
   .hub-cat, .hub-toy {
     background: none; border: none;
     font-size: inherit;
-    filter: drop-shadow(2px 4px 0 rgba(0,0,0,.2));
+    filter: drop-shadow(2px 4px 0 rgba(0,60,0,.3));
     transition: transform .15s;
   }
-  .hub-cat:hover, .hub-toy:hover { transform: scale(1.15); }
+  .hub-cat:hover, .hub-toy:hover { transform: scale(1.15) rotate(-4deg); }
 
   /* ---------- memory ---------- */
   #memory-grid {
@@ -180,15 +337,27 @@
   .mem-face {
     position: absolute; inset: 0;
     display: grid; place-items: center;
-    border-radius: 1.5vmin;
+    border-radius: 1.8vmin;
     backface-visibility: hidden;
     font-size: calc(var(--card) * .55);
-    box-shadow: var(--schaduw);
+    border: .45vmin solid #fff;
+    box-shadow: 0 .6vmin 0 rgba(0,0,0,.25), 0 1vmin 1.6vmin rgba(0,0,0,.18);
   }
-  .mem-front { background: repeating-linear-gradient(45deg, #1e90ff 0 12px, #45a5ff 12px 24px); }
-  .mem-front::after { content: "⭐"; font-size: calc(var(--card) * .4); }
-  .mem-back { background: #fff; transform: rotateY(180deg); }
-  .mem-card.matched .mem-back { background: #d9ffd9; animation: pop-in .4s; }
+  .mem-front { background: radial-gradient(circle at 32% 24%, #6db9ff, #1565d8 78%); }
+  .mem-front::before {
+    content: "";
+    position: absolute; inset: 9%;
+    border: .4vmin dashed rgba(255,255,255,.55);
+    border-radius: 1.2vmin;
+  }
+  .mem-front::after {
+    content: "🐾";
+    font-size: calc(var(--card) * .42);
+    transform: rotate(-14deg);
+    filter: drop-shadow(0 .3vmin 0 rgba(0,0,0,.3));
+  }
+  .mem-back { background: radial-gradient(circle at 50% 28%, #ffffff, #eef4ff); transform: rotateY(180deg); border-color: #ffd93b; }
+  .mem-card.matched .mem-back { background: radial-gradient(circle at 50% 28%, #eaffe9, #c9f5c7); border-color: #6fe08a; animation: pop-in .4s; }
 
   /* ---------- puzzel & vormen ---------- */
   .drag-item { position: absolute; touch-action: none; cursor: grab; }
@@ -202,13 +371,22 @@
   }
   .level-btn {
     font-size: clamp(16px, 3vmin, 26px);
-    padding: .3em .8em;
+    padding: .3em .9em;
     border-radius: 999px;
-    background: rgba(255,255,255,.85);
-    box-shadow: var(--schaduw);
+    background: linear-gradient(#ffffff, #e8eef7);
+    border: 3px solid rgba(255,255,255,.95);
+    box-shadow: 0 .3em 0 rgba(0,0,0,.22), inset 0 .18em 0 rgba(255,255,255,.8);
     font-weight: bold;
+    color: #3a4a63;
+    transition: transform .1s;
   }
-  .level-btn.active { background: var(--geel); transform: scale(1.08); }
+  .level-btn:active { transform: translateY(.2em) scale(.95); box-shadow: 0 .05em 0 rgba(0,0,0,.22); }
+  .level-btn.active {
+    background: linear-gradient(#ffe466, #ffc400);
+    color: #7a4a00;
+    transform: scale(1.1);
+    box-shadow: 0 .3em 0 rgba(160,100,0,.4), 0 0 1.4vmin rgba(255,220,80,.8), inset 0 .18em 0 rgba(255,255,255,.6);
+  }
 
   /* ---------- tellen ---------- */
   #count-stage {
@@ -226,23 +404,31 @@
   .num-btn {
     font-size: clamp(30px, 7vmin, 64px);
     width: 2em; height: 2em;
-    border-radius: 2vmin;
-    background: #fff;
+    border-radius: 2.2vmin;
+    background: linear-gradient(#ffffff, #e6eefc);
+    border: .55vmin solid #fff;
     font-weight: bold;
     color: var(--blauw);
-    box-shadow: var(--schaduw);
-    transition: transform .1s;
+    text-shadow: 0 2px 0 rgba(30,90,180,.15);
+    box-shadow: 0 .7vmin 0 rgba(40,50,90,.35), 0 1.2vmin 2vmin rgba(0,0,0,.2), inset 0 .5vmin 0 rgba(255,255,255,.9);
+    transition: transform .1s, box-shadow .1s;
   }
-  .num-btn:active { transform: scale(.9); }
+  .num-btn:hover { transform: translateY(-.3vmin) scale(1.05); }
+  .num-btn:active { transform: translateY(.4vmin) scale(.93); box-shadow: 0 .15vmin 0 rgba(40,50,90,.35); }
 
   /* ---------- kleuren ---------- */
   #paint-wrap { position: absolute; inset: 0; display: flex; }
   #paint-tools {
     flex: 0 0 auto;
     display: flex; flex-direction: column; gap: 1vmin;
-    padding: 1.5vmin;
+    padding: 1.5vmin 1.2vmin;
+    margin: 1.5vmin 0 1.5vmin 1.5vmin;
     align-items: center;
     overflow-y: auto;
+    background: linear-gradient(rgba(255,255,255,.85), rgba(255,255,255,.6));
+    border: .5vmin solid rgba(255,255,255,.9);
+    border-radius: 2.5vmin;
+    box-shadow: 0 .8vmin 0 rgba(120,20,10,.25);
   }
   .paint-color {
     width: clamp(34px, 6vmin, 54px); height: clamp(34px, 6vmin, 54px);
@@ -272,14 +458,18 @@
   }
   .dress-btn {
     font-size: clamp(16px, 3.2vmin, 28px);
-    padding: .45em .6em;
-    border-radius: 1.5vmin;
-    background: #fff;
-    box-shadow: var(--schaduw);
+    padding: .45em .7em;
+    border-radius: 999px;
+    background: linear-gradient(#ffffff, #e9f2f1);
+    border: 3px solid rgba(255,255,255,.95);
+    box-shadow: 0 .5vmin 0 rgba(0,80,75,.3), inset 0 .3vmin 0 rgba(255,255,255,.9);
     font-weight: bold;
+    color: #0b5d58;
     text-align: left;
+    transition: transform .1s, box-shadow .1s;
   }
-  .dress-btn:active { transform: scale(.95); }
+  .dress-btn:hover { transform: translateX(-.4vmin); }
+  .dress-btn:active { transform: translateY(.3vmin) scale(.96); box-shadow: 0 .1vmin 0 rgba(0,80,75,.3); }
 
   /* ---------- speelkamer ---------- */
   #busy-grid {
@@ -290,9 +480,10 @@
     gap: 2vmin; padding: 2.5vmin;
   }
   .busy-cell {
-    background: rgba(255,255,255,.85);
-    border-radius: 2.5vmin;
-    box-shadow: var(--schaduw);
+    background: linear-gradient(#ffffff, #ffe9f6);
+    border: .5vmin solid rgba(255,255,255,.95);
+    border-radius: 2.8vmin;
+    box-shadow: 0 .8vmin 0 rgba(140,10,100,.3), inset 0 .5vmin 0 rgba(255,255,255,.9);
     display: grid; place-items: center;
     font-size: clamp(30px, 7vmin, 64px);
     overflow: hidden;
@@ -332,10 +523,14 @@
   #book-wrap { position: absolute; inset: 0; display: flex; }
   #sticker-shelf {
     flex: 0 0 auto; width: clamp(120px, 20vmin, 200px);
-    background: rgba(255,255,255,.75);
+    background:
+      repeating-linear-gradient(to bottom, rgba(120,60,10,.1) 0 2px, transparent 2px 25%),
+      linear-gradient(#e8b578, #c98a4b);
+    border: .6vmin solid var(--hout-d);
     border-radius: 2vmin;
+    box-shadow: inset 0 .6vmin 0 rgba(255,255,255,.35), 0 .8vmin 0 rgba(100,60,10,.3);
     margin: 1.5vmin;
-    padding: 1vmin;
+    padding: 1.2vmin;
     display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: center;
     gap: 1vmin;
     overflow-y: auto;
@@ -343,10 +538,21 @@
   #book-page {
     flex: 1; position: relative;
     margin: 1.5vmin;
-    background: #fffbe8;
-    border-radius: 2vmin;
-    box-shadow: var(--schaduw);
+    background:
+      radial-gradient(rgba(180,160,90,.14) 12%, transparent 14%),
+      #fffdf2;
+    background-size: 4vmin 4vmin, auto;
+    border: .8vmin solid #fff;
+    border-radius: 2.5vmin;
+    box-shadow: 0 1vmin 0 rgba(150,100,0,.3), 0 1.8vmin 3vmin rgba(0,0,0,.2);
     overflow: hidden;
+  }
+  #book-page::after {
+    content: "";
+    position: absolute; inset: 1.8vmin;
+    border: .45vmin dashed #e6d9a8;
+    border-radius: 1.8vmin;
+    pointer-events: none;
   }
   #book-page::before {
     content: "Stickerboek van SEP";
@@ -363,9 +569,13 @@
     line-height: 1;
   }
   .sticker-locked {
-    font-size: clamp(28px, 6vmin, 56px);
-    opacity: .35;
+    font-size: clamp(24px, 5vmin, 46px);
     display: grid; place-items: center;
+    width: 1.5em; height: 1.5em;
+    background: rgba(80,40,5,.22);
+    border-radius: 1.2vmin;
+    box-shadow: inset 0 .3vmin .6vmin rgba(0,0,0,.25);
+    opacity: .8;
   }
 
   /* ---------- effecten ---------- */
@@ -417,9 +627,25 @@
     100% { opacity: 0; transform: translate(-50%,-50%) scale(1.1); }
   }
   @keyframes disco { 0% { filter: hue-rotate(0); } 100% { filter: hue-rotate(360deg); } }
+  @keyframes spin-slow { to { transform: rotate(360deg); } }
+  @keyframes cloud-drift { from { left: -25vw; } to { left: 110vw; } }
+  @keyframes smoke-rise {
+    0% { transform: translateY(0) scale(.5); opacity: 0; }
+    20% { opacity: .8; }
+    100% { transform: translateY(-9vmin) scale(1.4); opacity: 0; }
+  }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 </style>
 </head>
 <body>
+<div id="scenery">
+  <div id="sun"><div id="sun-rays"></div><div id="sun-core"></div></div>
+  <div class="cloud c1"></div>
+  <div class="cloud c2"></div>
+  <div class="cloud c3"></div>
+  <div class="hill h1"></div>
+  <div class="hill h2"></div>
+</div>
 <div id="app"></div>
 <div id="fx-layer"></div>
 <div id="big-msg"></div>
@@ -695,6 +921,7 @@ function gaNaar(naam) {
 }
 
 function roomTop(app, titel, kleur) {
+  $("#scenery").style.display = "none";
   const top = document.createElement("div");
   top.className = "room-top";
   top.innerHTML = `<button class="icon-btn" id="back-btn" title="Terug naar het huis">🏠</button>
@@ -712,14 +939,14 @@ function roomTop(app, titel, kleur) {
    HUB: het kattenhuis
    ============================================================ */
 const KAMERS = [
-  { id: "memory",   icon: "🎴", naam: "Memory",      kleur: "#1e90ff" },
-  { id: "puzzel",   icon: "🧩", naam: "Puzzel",      kleur: "#2ecc40" },
-  { id: "vormen",   icon: "🔷", naam: "Vormen",      kleur: "#ff851b" },
-  { id: "tellen",   icon: "🔢", naam: "Tellen",      kleur: "#9b59b6" },
-  { id: "kleuren",  icon: "🎨", naam: "Kleuren",     kleur: "#ff4136" },
-  { id: "verkleden",icon: "🦸", naam: "Verkleden",   kleur: "#00b5ad" },
-  { id: "speel",    icon: "🎪", naam: "Speelkamer",  kleur: "#f012be" },
-  { id: "stickers", icon: "⭐", naam: "Stickers",    kleur: "#ffb700" },
+  { id: "memory",   icon: "🎴", naam: "Memory",      licht: "#6db9ff", kleur: "#2b8cff", donker: "#1257b8" },
+  { id: "puzzel",   icon: "🧩", naam: "Puzzel",      licht: "#7fe89a", kleur: "#2ecc40", donker: "#1d9e4c" },
+  { id: "vormen",   icon: "🔷", naam: "Vormen",      licht: "#ffb066", kleur: "#ff851b", donker: "#d15f00" },
+  { id: "tellen",   icon: "🔢", naam: "Tellen",      licht: "#c78fe0", kleur: "#9b59b6", donker: "#6f3596" },
+  { id: "kleuren",  icon: "🎨", naam: "Kleuren",     licht: "#ff8f83", kleur: "#ff4136", donker: "#c62317" },
+  { id: "verkleden",icon: "🦸", naam: "Verkleden",   licht: "#4fd8cf", kleur: "#00b5ad", donker: "#007f79" },
+  { id: "speel",    icon: "🎪", naam: "Speelkamer",  licht: "#ff6fd8", kleur: "#f012be", donker: "#ab0b88" },
+  { id: "stickers", icon: "⭐", naam: "Stickers",    licht: "#ffd75e", kleur: "#ffb700", donker: "#cf8600" },
 ];
 
 const KAT_REACTIES = [
@@ -730,21 +957,30 @@ const KAT_REACTIES = [
 ];
 
 scenes.hub = function (app) {
-  document.body.style.background = "linear-gradient(#7ec8ff, #d8f3ff 70%, #9be89b)";
+  document.body.style.background = "linear-gradient(#5db4ff, #a8dcff 55%, #cdf3d0)";
+  $("#scenery").style.display = "";
   const hub = document.createElement("div");
   hub.id = "hub";
   hub.innerHTML = `
-    <div id="hub-title">🌈 Het Kattenhuis van ${NAAM} 🏠</div>
+    <div id="hub-title">🐾 Het Kattenhuis van ${NAAM} 🐾</div>
     <div id="house">
-      <div id="roof">⭐ ${NAAM.toUpperCase()} ⭐</div>
+      <div id="roof-wrap">
+        <div id="chimney">
+          <span class="smoke">💨</span><span class="smoke s2">💨</span><span class="smoke s3">💨</span>
+        </div>
+        <div id="roof"></div>
+        <div id="attic">😺</div>
+      </div>
       <div id="rooms"></div>
     </div>
     <div id="hub-bottom">
+      <span class="veld-bloem">🌷</span>
       <button class="hub-toy" id="bel-btn" title="Deurbel">🔔</button>
       <button class="hub-cat">😺</button>
       <button class="hub-cat">😸</button>
       <button class="hub-cat">😻</button>
       <button class="hub-toy" id="klok-btn" title="Koekoeksklok">🕰️</button>
+      <span class="veld-bloem">🌼</span>
     </div>`;
   app.appendChild(hub);
 
@@ -752,8 +988,8 @@ scenes.hub = function (app) {
   for (const kamer of KAMERS) {
     const d = document.createElement("button");
     d.className = "room-door";
-    d.style.background = kamer.kleur;
-    d.innerHTML = `<span class="r-icon">${kamer.icon}</span><span>${kamer.naam}</span>`;
+    d.style.background = `linear-gradient(168deg, ${kamer.licht} 0%, ${kamer.kleur} 55%, ${kamer.donker} 100%)`;
+    d.innerHTML = `<span class="r-icon">${kamer.icon}</span><span class="r-name">${kamer.naam}</span>`;
     d.addEventListener("click", () => { sfx.plop(); gaNaar(kamer.id); });
     rooms.appendChild(d);
   }
@@ -785,7 +1021,7 @@ scenes.hub = function (app) {
 const MEM_EMOJIS = ["😺", "🚀", "🦖", "⚽", "🚒", "🐟", "🌈", "🦸", "🏴‍☠️", "🐢"];
 
 scenes.memory = function (app) {
-  const body = roomTop(app, "🎴 Memory: zoek de paartjes!", "linear-gradient(#1e90ff, #7ec8ff)");
+  const body = roomTop(app, "🎴 Memory: zoek de paartjes!", "linear-gradient(160deg, #4aa3ff, #1565d8)");
   const top = app.querySelector(".room-top");
   const lvlRow = document.createElement("div");
   lvlRow.className = "choice-row";
@@ -953,7 +1189,7 @@ const PUZZEL_SCENES = [
 ];
 
 scenes.puzzel = function (app) {
-  const body = roomTop(app, "🧩 Puzzel: sleep de stukjes!", "linear-gradient(#2ecc40, #b8f0b8)");
+  const body = roomTop(app, "🧩 Puzzel: sleep de stukjes!", "linear-gradient(160deg, #52d873, #1d9e4c)");
   const top = app.querySelector(".room-top");
   const lvlRow = document.createElement("div");
   lvlRow.className = "choice-row";
@@ -980,8 +1216,9 @@ scenes.puzzel = function (app) {
     const bordMaat = Math.min(body.clientHeight * 0.62, body.clientWidth * 0.55, 460);
     const bord = document.createElement("div");
     bord.style.cssText = `position:absolute; left:3vmin; top:50%; transform:translateY(-56%);
-      width:${bordMaat}px; height:${bordMaat}px; border-radius:12px; overflow:hidden;
-      box-shadow: var(--schaduw); background:#fff;`;
+      width:${bordMaat}px; height:${bordMaat}px; border-radius:14px; overflow:hidden;
+      border:.6vmin solid #fff;
+      box-shadow: 0 .8vmin 0 rgba(0,60,20,.35), 0 1.6vmin 2.6vmin rgba(0,0,0,.25); background:#fff;`;
     bord.innerHTML = `<div style="position:absolute;inset:0;opacity:.28">${sceneSVG(scene.svg, "0 0 300 300")}</div>`;
     body.appendChild(bord);
     for (let c = 1; c < cols; c++) {
@@ -1076,7 +1313,7 @@ const VORMEN = [
 ];
 
 scenes.vormen = function (app) {
-  const body = roomTop(app, "🔷 Vormen: sleep naar de schaduw!", "linear-gradient(#ff851b, #ffd9a8)");
+  const body = roomTop(app, "🔷 Vormen: sleep naar de schaduw!", "linear-gradient(160deg, #ffab4d, #e06a00)");
   let ronde = 0;
 
   function bouw() {
@@ -1092,7 +1329,8 @@ scenes.vormen = function (app) {
       slot.className = "vorm-slot";
       slot.style.cssText = `position:absolute; width:${maat}px; height:${maat}px;
         left:${(i + 0.35) * (body.clientWidth / 4.7)}px; top:6%;
-        background:rgba(255,255,255,.5); border-radius:14px; padding:6px;`;
+        background:rgba(255,255,255,.55); border:.45vmin dashed rgba(255,255,255,.95);
+        box-shadow: inset 0 .4vmin .8vmin rgba(0,0,0,.18); border-radius:14px; padding:6px;`;
       slot.innerHTML = `<svg viewBox="0 0 100 100" style="width:100%;height:100%;opacity:.45">${v.svg("#555")}</svg>`;
       body.appendChild(slot);
     });
@@ -1163,7 +1401,7 @@ const TEL_DINGEN = [
 ];
 
 scenes.tellen = function (app) {
-  const body = roomTop(app, "🔢 Tellen: hoeveel zie je?", "linear-gradient(#9b59b6, #d9b8f0)");
+  const body = roomTop(app, "🔢 Tellen: hoeveel zie je?", "linear-gradient(160deg, #b57ad4, #6f3596)");
   let goedGeteld = 0;
 
   function ronde() {
@@ -1246,7 +1484,7 @@ const KLEURPLATEN = {
 const PALET = ["#ff4136", "#ff851b", "#ffd700", "#2ecc40", "#00b5ad", "#1e90ff", "#9b59b6", "#f012be", "#8b5a2b", "#111111", "#ffffff"];
 
 scenes.kleuren = function (app) {
-  const body = roomTop(app, "🎨 Kleuren maar!", "linear-gradient(#ff4136, #ffc2b8)");
+  const body = roomTop(app, "🎨 Kleuren maar!", "linear-gradient(160deg, #ff7a6e, #d63c3c)");
   const top = app.querySelector(".room-top");
   const platenRow = document.createElement("div");
   platenRow.className = "choice-row";
@@ -1377,7 +1615,7 @@ const DRESS_LABELS = {
 };
 
 scenes.verkleden = function (app) {
-  const body = roomTop(app, "🦸 Verkleed de kat!", "linear-gradient(#00b5ad, #a8f0ec)");
+  const body = roomTop(app, "🦸 Verkleed de kat!", "linear-gradient(160deg, #35cfc5, #00857e)");
   const staat = { pak: 0, hoed: 0, bril: 0, cape: 0, ding: 0 };
 
   body.innerHTML = `<div id="dress-wrap"><div id="dress-cat"></div><div id="dress-panel"></div></div>`;
@@ -1478,7 +1716,7 @@ scenes.verkleden = function (app) {
    SPEELKAMER (busy board, Pok Pok-stijl)
    ============================================================ */
 scenes.speel = function (app) {
-  const body = roomTop(app, "🎪 Speelkamer: druk maar overal op!", "linear-gradient(#f012be, #ffb8ec)");
+  const body = roomTop(app, "🎪 Speelkamer: druk maar overal op!", "linear-gradient(160deg, #ff5fd0, #ab0b88)");
   body.innerHTML = `<div id="busy-grid"></div>`;
   const grid = $("#busy-grid");
   const noten = [262, 330, 392, 523];
@@ -1594,7 +1832,7 @@ scenes.speel = function (app) {
    STICKERBOEK
    ============================================================ */
 scenes.stickers = function (app) {
-  const body = roomTop(app, `⭐ Stickerboek van ${NAAM}`, "linear-gradient(#ffb700, #ffe9a8)");
+  const body = roomTop(app, `⭐ Stickerboek van ${NAAM}`, "linear-gradient(160deg, #ffcf4d, #e29200)");
   body.innerHTML = `<div id="book-wrap"><div id="sticker-shelf"></div><div id="book-page"></div></div>`;
   const shelf = $("#sticker-shelf");
   const page = $("#book-page");
