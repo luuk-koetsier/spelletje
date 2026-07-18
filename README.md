@@ -15,19 +15,20 @@ Werkt met de muis én met touch, en helemaal offline.
 
 | Kamer | Wat doe je er? |
 |---|---|
-| 🎴 Memory | Paartjes zoeken (4, 6 of 8 paar) |
-| 🧩 Puzzel | Sleep-puzzels van 4, 6 of 9 stukjes (raket, brandweerauto, kattenhuis) |
-| 🔷 Vormen | Vormen naar de juiste schaduw slepen |
-| 🔢 Tellen | Hoeveel visjes/raketten/katjes zie je? Klik het goede cijfer |
-| 🎨 Kleuren | Vrij kleuren en tekenen op kleurplaten |
-| 🦸 Verkleden | De kat aankleden met capes, helmen, piratenhoeden en meer |
-| 🎪 Speelkamer | Knopjes, schuifjes, lampjes en verrassingsdoosjes — gewoon lekker drukken |
-| ⭐ Stickers | Verdiende stickers vrij in je stickerboek plakken |
+| 🎴 Memory | Paartjes zoeken op de speeltafel (4, 6 of 8 paar) |
+| 🧩 Puzzel | Sleep-puzzels van 4, 6 of 9 stukjes; kies zelf uit 5 plaatjes (raket, brandweer, kattenhuis, piratenschip, racebaan) |
+| 🔷 Vormen | Vormen naar de juiste schaduw slepen op het schoolbord |
+| 🔢 Tellen | Tellen in het aquarium: klik het goede cijfer |
+| 🎨 Kleuren | Zes kleurplaten (kat, raket, vis, raceauto, dino, kasteel) en vrij tekenen op de schildersezel |
+| 🦸 Verkleden | De kat op het podium aankleden: hoeden, capes, vleugels, een vriendje en meer |
+| 🎪 Speelkamer | Circustent vol knopjes: xylofoon, bellenblaas, draaimolen, verrassingsdoosjes |
+| ⭐ Stickers | 18 te verdienen stickers vrij in je plakboek plakken |
 
 Met de spelletjes verdien je stickers voor het stickerboek. Er is geen "game
 over" en niets gaat ooit fout — alles mag opnieuw en op je eigen tempo.
 
-Ook leuk: klik in het huis maar eens op de katjes, de deurbel 🔔 en de klok 🕰️…
+Ook leuk: klik in het huis maar eens op de katjes, de deurbel 🔔, de klok 🕰️,
+de brievenbus 📬, de bloempot 🪴, het vogelhuisje op het dak en Mauwtje de kat…
 
 ## Voor de ouders
 
