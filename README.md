@@ -28,7 +28,9 @@ Met de spelletjes verdien je stickers voor het stickerboek. Er is geen "game
 over" en niets gaat ooit fout — alles mag opnieuw en op je eigen tempo.
 
 Ook leuk: klik in het huis maar eens op de katjes, de deurbel 🔔, de klok 🕰️,
-de brievenbus 📬, de bloempot 🪴, het vogelhuisje op het dak en Mauwtje de kat…
+de brievenbus 📬, de bloempot 🪴, het vogelhuisje op het dak, de hond in zijn
+hok 🐶, de gieter, de voetbal ⚽ en Mauwtje de kat… En let maar eens op wat er
+allemaal door de lucht vliegt!
 
 ## Voor de ouders
 
