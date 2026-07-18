@@ -255,50 +255,104 @@
     border-top: none;
     border-radius: 0 0 3vmin 3vmin;
     box-shadow: inset 0 1vmin 0 rgba(255,255,255,.3), inset 0 -1.2vmin 0 rgba(90,45,8,.25);
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(2, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 1.6vmin;
     padding: 3vmin 2vmin 2vmin;
     min-height: 0;
   }
+  .verdieping { flex: 1; display: flex; gap: 1.6vmin; min-height: 0; }
+  .verdieping .room-door { flex: 1; }
   .room-door {
     position: relative;
-    border-radius: 45% 45% 1.8vmin 1.8vmin / 26% 26% 1.8vmin 1.8vmin;
-    border: .55vmin solid rgba(255,255,255,.9);
-    box-shadow: 0 .7vmin 0 rgba(80,40,5,.35), inset 0 -1.2vmin 0 rgba(0,0,0,.2), inset 0 .8vmin 0 rgba(255,255,255,.3);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: .8vmin;
-    color: #fff;
-    font-weight: bold;
-    font-size: clamp(12px, 2.5vmin, 23px);
-    transition: transform .12s, box-shadow .12s;
-    padding: .8vmin;
+    border: none;
+    border-radius: 1.4vmin;
     overflow: hidden;
+    box-shadow: inset 0 .8vmin 1.6vmin rgba(0,0,0,.22), inset 0 -0.3vmin .8vmin rgba(0,0,0,.12), 0 .4vmin 0 rgba(90,45,8,.4);
+    cursor: pointer;
+    padding: 0;
+    transition: transform .12s, filter .12s;
   }
-  .room-door::after {
-    content: "";
-    position: absolute; top: 3%; left: 10%; right: 10%; height: 26%;
-    border-radius: 999px;
-    background: linear-gradient(rgba(255,255,255,.4), rgba(255,255,255,0));
+  .room-door:hover { transform: scale(1.03); filter: brightness(1.08); z-index: 2; }
+  .room-door:active { transform: scale(.96); }
+  /* behangetjes per kamer */
+  .behang-memory   { background: radial-gradient(rgba(255,255,255,.3) 16%, transparent 18%) 0 0/3.4vmin 3.4vmin, linear-gradient(#5aa9f0, #2b7cd8); }
+  .behang-puzzel   { background: repeating-linear-gradient(45deg, rgba(255,255,255,.16) 0 1.6vmin, transparent 1.6vmin 3.2vmin), linear-gradient(#54c96e, #2a9648); }
+  .behang-vormen   { background: repeating-linear-gradient(90deg, rgba(255,255,255,.18) 0 2.4vmin, transparent 2.4vmin 4.8vmin), linear-gradient(#ffa14d, #e2731a); }
+  .behang-tellen   { background: radial-gradient(rgba(255,255,255,.35) 12%, transparent 15%) 0 0/4vmin 5vmin, linear-gradient(#45bede, #1a86b8); }
+  .behang-kleuren  { background: radial-gradient(rgba(255,255,255,.25) 15%, transparent 17%) 1vmin 1vmin/4.5vmin 4.5vmin, linear-gradient(#ff7f74, #e04a3c); }
+  .behang-verkleden{ background: repeating-linear-gradient(-45deg, rgba(255,255,255,.15) 0 1.8vmin, transparent 1.8vmin 3.6vmin), linear-gradient(#2fc4ba, #0b9186); }
+  .behang-speel    { background: radial-gradient(rgba(255,255,255,.3) 18%, transparent 20%) 0 0/3.8vmin 3.8vmin, linear-gradient(#f455cc, #c116a0); }
+  .behang-stickers { background: repeating-linear-gradient(45deg, rgba(255,255,255,.2) 0 2vmin, transparent 2vmin 4vmin), linear-gradient(#ffc93d, #e89b00); }
+  .k-vloer {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 17%;
+    background: repeating-linear-gradient(90deg, #e8b578 0 3vmin, #d9a05e 3vmin 6vmin);
+    border-top: .45vmin solid #b5773a;
+    box-shadow: inset 0 .4vmin .6vmin rgba(120,60,10,.3);
     pointer-events: none;
   }
-  .room-door:hover { transform: translateY(-.5vmin) scale(1.04); box-shadow: 0 1.2vmin 0 rgba(80,40,5,.35), 0 1.6vmin 2.4vmin rgba(0,0,0,.25), inset 0 -1.2vmin 0 rgba(0,0,0,.2), inset 0 .8vmin 0 rgba(255,255,255,.3); }
-  .room-door:active { transform: translateY(.3vmin) scale(.96); }
-  .room-door .r-icon {
-    width: clamp(44px, 10vmin, 92px);
-    height: clamp(44px, 10vmin, 92px);
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 28%, #ffffff, #e9eef7 75%);
-    box-shadow: 0 .5vmin 0 rgba(0,0,0,.22), inset 0 -.6vmin 0 rgba(0,0,0,.08);
-    display: grid; place-items: center;
-    font-size: clamp(26px, 6.2vmin, 56px);
-    line-height: 1;
-    animation: icoon-bob 3.6s ease-in-out infinite;
+  .k-lamp { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 6vmin; height: 5.2vmin; pointer-events: none; }
+  .k-lamp::before {
+    content: "";
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 2px; height: 32%;
+    background: #6f4218;
   }
-  .room-door:nth-child(2n) .r-icon { animation-delay: -1.2s; }
-  .room-door:nth-child(3n) .r-icon { animation-delay: -2.4s; }
+  .k-lamp::after {
+    content: "";
+    position: absolute; top: 28%; left: 16%; right: 16%; height: 42%;
+    background: linear-gradient(#ffd93b, #ffb200);
+    clip-path: polygon(30% 0, 70% 0, 100% 100%, 0 100%);
+    box-shadow: 0 1vmin 2.2vmin rgba(255,205,80,.75);
+  }
+  .k-raam {
+    position: absolute; top: 12%; left: 8%;
+    width: 24%; height: 36%;
+    background:
+      linear-gradient(#fff, #fff) 50% 0/2px 100% no-repeat,
+      linear-gradient(#fff, #fff) 0 50%/100% 2px no-repeat,
+      linear-gradient(#cfeeff, #7ec8ff);
+    border: .5vmin solid #fff;
+    border-radius: 1vmin;
+    box-shadow: 0 .3vmin .6vmin rgba(0,0,0,.25);
+    pointer-events: none;
+  }
+  .k-lijstje {
+    position: absolute; top: 13%; right: 9%;
+    font-size: clamp(16px, 3.6vmin, 34px);
+    background: #fff8ec;
+    border: .4vmin solid #8a5a24;
+    border-radius: .8vmin;
+    padding: .1em .3em;
+    line-height: 1.2;
+    box-shadow: 0 .3vmin .5vmin rgba(0,0,0,.25);
+    pointer-events: none;
+  }
+  .k-spul { position: absolute; bottom: 15%; font-size: clamp(18px, 4.2vmin, 40px); pointer-events: none; filter: drop-shadow(1px 2px 1px rgba(0,0,0,.25)); }
+  .k-spul.s1 { left: 10%; }
+  .k-spul.s2 { left: 34%; font-size: clamp(15px, 3.4vmin, 32px); }
+  .k-kat {
+    position: absolute; bottom: 14%; right: 8%;
+    font-size: clamp(22px, 5vmin, 46px);
+    pointer-events: none;
+    filter: drop-shadow(1px 2px 1px rgba(0,0,0,.3));
+    animation: icoon-bob 3.2s ease-in-out infinite;
+  }
+  .room-door:nth-child(2n) .k-kat { animation-delay: -1.4s; }
+  .oor { position: absolute; bottom: 68%; width: clamp(32px, 7.2vmin, 66px); pointer-events: none; }
+  .oor svg { width: 100%; display: block; }
+  .oor.l { left: 40%; transform: rotate(-10deg); }
+  .oor.r { right: 40%; transform: rotate(10deg); }
+  .k-kleed {
+    position: absolute; bottom: 13%; left: 8%;
+    width: 30%; height: 7%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 40%, var(--c, #ffd93b), color-mix(in srgb, var(--c, #ffd93b) 70%, #000 12%));
+    opacity: .85;
+    box-shadow: inset 0 .3vmin .5vmin rgba(0,0,0,.2);
+    pointer-events: none;
+  }
+  .room-door:hover .k-kat { animation: wiggle .5s; }
   #vlieger {
     position: absolute; right: 5%; top: 19%;
     width: clamp(30px, 7vmin, 64px);
@@ -309,12 +363,17 @@
   #vlieger svg { width: 100%; display: block; }
   .gras-spriet { position: absolute; bottom: 55%; font-size: clamp(12px, 2.6vmin, 24px); pointer-events: none; filter: drop-shadow(1px 2px 1px rgba(0,60,0,.3)); }
   .room-door .r-name {
+    position: absolute; bottom: 3%; left: 50%; transform: translateX(-50%);
+    z-index: 2;
     background: linear-gradient(#ffedd1, #fbd39c);
     color: #7a4a18;
+    font-weight: bold;
+    font-size: clamp(12px, 2.5vmin, 23px);
     border-radius: 999px;
     padding: .12em .8em;
     box-shadow: 0 .3vmin 0 rgba(90,50,10,.35);
     white-space: nowrap;
+    pointer-events: none;
   }
   #hub-bottom {
     flex: 0 0 auto;
@@ -717,7 +776,7 @@
 
   /* hub niveau 10: huis */
   #weerhaan {
-    position: absolute; left: 50%; bottom: 86%; transform: translateX(-50%);
+    position: absolute; left: 24%; bottom: 40%; transform: translateX(-50%);
     width: clamp(34px, 7.5vmin, 70px);
     pointer-events: none;
     filter: drop-shadow(1px 2px 1px rgba(0,0,0,.35));
@@ -1039,6 +1098,7 @@
     100% { transform: translateY(0); }
   }
   @keyframes haan-draai { from { transform: rotate(-20deg); } to { transform: rotate(20deg); } }
+  @keyframes icoon-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-.7vmin); } }
   @keyframes slak-kruip { from { left: 4%; } to { left: 88%; } }
   @keyframes stuiter {
     0%, 100% { transform: translateY(0); }
@@ -1485,6 +1545,14 @@ scenes.hub = function (app) {
     <div id="hub-title">🐾 Het Kattenhuis van ${NAAM} 🐾</div>
     <div id="house">
       <div id="roof-wrap">
+        <span class="oor l"><svg viewBox="0 0 40 40">
+          <polygon points="4,38 20,2 36,38" fill="#d63c3c" stroke="#a82c2c" stroke-width="2"/>
+          <polygon points="12,36 20,13 28,36" fill="#ffb3c1"/>
+        </svg></span>
+        <span class="oor r"><svg viewBox="0 0 40 40">
+          <polygon points="4,38 20,2 36,38" fill="#d63c3c" stroke="#a82c2c" stroke-width="2"/>
+          <polygon points="12,36 20,13 28,36" fill="#ffb3c1"/>
+        </svg></span>
         <div id="weerhaan">
           <svg viewBox="0 0 60 60">
             <rect x="28" y="28" width="4" height="32" fill="#555"/>
@@ -1522,7 +1590,9 @@ scenes.hub = function (app) {
         <span class="klimop" style="left:-1vmin; top:-1.5vmin;">🌿</span>
         <span class="klimop" style="right:-1vmin; top:-1vmin; transform:scaleX(-1);">🌿</span>
         <span class="klimop" style="right:-1.5vmin; bottom:-1vmin; transform:rotate(160deg);">🌿</span>
-        <span class="lieveheersbeestje" style="right:26.5%; top:55%;">🐞</span>
+        <span class="lieveheersbeestje" style="right:26.5%; top:31%;">🐞</span>
+        <span style="position:absolute; right:31%; top:30%; font-size:clamp(24px,5.5vmin,50px); z-index:4;
+          pointer-events:none; transform:rotate(9deg); filter:drop-shadow(2px 3px 2px rgba(60,30,0,.4));">🪜</span>
       </div>
     </div>
     <button id="mascotte" title="Mauwtje de kat">${catSVG("#ffb35c", "#ffd9a8")}</button>
@@ -1575,14 +1645,46 @@ scenes.hub = function (app) {
     </div>`;
   app.appendChild(hub);
 
+  // Poppenhuis-doorsnede: elke kamer is een ingericht interieurtje
+  const INTERIEURS = {
+    memory:    { kat: "😺", muur: "🎴", spul1: "🪑", spul2: "🧸", raam: true,  kleed: "#ffd93b" },
+    puzzel:    { kat: "😸", muur: "🧩", spul1: "📦", spul2: "🚂", raam: false, kleed: null },
+    vormen:    { kat: "😼", muur: "🔺", spul1: "🧮", spul2: "🔷", raam: true,  kleed: null },
+    tellen:    { kat: "😻", muur: "🐠", spul1: "🪸", spul2: "⚓", raam: false, kleed: "#7fd4ff" },
+    kleuren:   { kat: "🐱", muur: "🖼️", spul1: "🎨", spul2: "🖌️", raam: true,  kleed: null },
+    verkleden: { kat: "😽", muur: "👑", spul1: "🎩", spul2: "🛡️", raam: false, kleed: "#ff5252" },
+    speel:     { kat: "😹", muur: "🎪", spul1: "🎈", spul2: "🥁", raam: true,  kleed: null },
+    stickers:  { kat: "🙀", muur: "⭐", spul1: "📖", spul2: "🏆", raam: false, kleed: "#c78fe0" },
+  };
+  const VERDIEPINGEN = [
+    ["memory", "puzzel"],
+    ["vormen", "tellen", "kleuren"],
+    ["verkleden", "speel", "stickers"],
+  ];
   const rooms = $("#rooms");
-  for (const kamer of KAMERS) {
-    const d = document.createElement("button");
-    d.className = "room-door";
-    d.style.background = `linear-gradient(168deg, ${kamer.licht} 0%, ${kamer.kleur} 55%, ${kamer.donker} 100%)`;
-    d.innerHTML = `<span class="r-icon">${kamer.icon}</span><span class="r-name">${kamer.naam}</span>`;
-    d.addEventListener("click", () => { sfx.plop(); gaNaar(kamer.id); });
-    rooms.appendChild(d);
+  const kamerById = Object.fromEntries(KAMERS.map(k => [k.id, k]));
+  for (const rij of VERDIEPINGEN) {
+    const vd = document.createElement("div");
+    vd.className = "verdieping";
+    for (const id of rij) {
+      const kamer = kamerById[id];
+      const s = INTERIEURS[id];
+      const d = document.createElement("button");
+      d.className = "room-door behang-" + id;
+      d.innerHTML = `
+        <span class="k-lamp"></span>
+        ${s.raam ? '<span class="k-raam"></span>' : ""}
+        ${s.kleed ? `<span class="k-kleed" style="--c:${s.kleed}"></span>` : ""}
+        <span class="k-lijstje">${s.muur}</span>
+        <span class="k-spul s1">${s.spul1}</span>
+        <span class="k-spul s2">${s.spul2}</span>
+        <span class="k-kat">${s.kat}</span>
+        <span class="k-vloer"></span>
+        <span class="r-name">${kamer.icon} ${kamer.naam}</span>`;
+      d.addEventListener("click", () => { sfx.plop(); gaNaar(kamer.id); });
+      vd.appendChild(d);
+    }
+    rooms.appendChild(vd);
   }
 
   hub.querySelectorAll(".hub-cat").forEach(kat => {
