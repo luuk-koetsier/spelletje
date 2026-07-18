@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Het Kattenhuis van Sep</title>
+<style>
+  :root {
+    --blauw: #1e90ff;
+    --groen: #2ecc40;
+    --oranje: #ff851b;
+    --geel: #ffd700;
+    --rood: #ff4136;
+    --paars: #9b59b6;
+    --lucht: #7ec8ff;
+    --schaduw: 0 6px 0 rgba(0,0,0,.18);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body {
+    font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", cursive, sans-serif;
+    background: linear-gradient(#7ec8ff, #d8f3ff 70%, #9be89b);
+    touch-action: none;
+  }
+  #app { position: fixed; inset: 0; display: flex; flex-direction: column; }
+
+  /* ---------- algemene knoppen ---------- */
+  button {
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
+  }
+  .big-btn {
+    font-size: clamp(20px, 4vmin, 34px);
+    padding: .5em 1em;
+    border-radius: 999px;
+    background: var(--geel);
+    box-shadow: var(--schaduw);
+    transition: transform .1s;
+  }
+  .big-btn:active { transform: scale(.93) translateY(3px); box-shadow: none; }
+  .icon-btn {
+    font-size: clamp(26px, 5.5vmin, 44px);
+    width: 1.9em; height: 1.9em;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: var(--schaduw);
+    display: grid; place-items: center;
+    transition: transform .1s;
+  }
+  .icon-btn:active { transform: scale(.9); box-shadow: none; }
+
+  /* ---------- kop van elke kamer ---------- */
+  .room-top {
+    display: flex; align-items: center; gap: 2vmin;
+    padding: 1.2vmin clamp(64px, 12vmin, 100px) 1.2vmin 2vmin;
+    flex: 0 0 auto;
+  }
+  .room-title {
+    font-size: clamp(22px, 5vmin, 42px);
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 2px 3px 0 rgba(0,0,0,.25);
+    flex: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .room-body { flex: 1; position: relative; overflow: hidden; }
+
+  /* ---------- start-overlay ---------- */
+  #start-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: linear-gradient(135deg, #1e90ff, #9b59b6);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #start-card {
+    background: #fff;
+    border-radius: 4vmin;
+    padding: 4vmin 6vmin;
+    text-align: center;
+    box-shadow: 0 12px 0 rgba(0,0,0,.25);
+    animation: pop-in .5s;
+    max-width: 90vw;
+  }
+  #start-card h1 {
+    margin: 1vmin 0 2vmin;
+    font-size: clamp(26px, 6vmin, 52px);
+    color: var(--blauw);
+  }
+  #start-card .cat-wrap { width: clamp(110px, 24vmin, 200px); margin: 0 auto; animation: floaty 2.5s ease-in-out infinite; }
+  #start-btn { background: var(--groen); color: #fff; font-weight: bold; }
+
+  /* ---------- geluid-knop ---------- */
+  #sound-btn { position: fixed; top: 1.2vmin; right: 1.4vmin; z-index: 400; }
+
+  /* ---------- het huis (hub) ---------- */
+  #hub { display: flex; flex-direction: column; height: 100%; }
+  #hub-title {
+    text-align: center;
+    font-size: clamp(24px, 5.5vmin, 46px);
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 3px 3px 0 rgba(0,0,0,.25);
+    padding: 1vmin 12vmin 0.5vmin 2vmin;
+  }
+  #house {
+    flex: 1; display: flex; flex-direction: column;
+    width: min(92vw, 130vmin);
+    margin: 0 auto;
+    min-height: 0;
+  }
+  #roof {
+    flex: 0 0 auto;
+    height: clamp(38px, 9vmin, 80px);
+    background: var(--rood);
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    display: flex; align-items: flex-end; justify-content: center;
+    color: #fff; font-weight: bold;
+    font-size: clamp(14px, 3vmin, 26px);
+    text-shadow: 1px 2px 0 rgba(0,0,0,.3);
+    position: relative;
+  }
+  #rooms {
+    flex: 1;
+    background: #ffb45e;
+    border: 1.2vmin solid #b06a2a;
+    border-top: none;
+    border-radius: 0 0 3vmin 3vmin;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 1.4vmin;
+    padding: 1.6vmin;
+    min-height: 0;
+  }
+  .room-door {
+    border-radius: 2vmin;
+    box-shadow: inset 0 -6px 0 rgba(0,0,0,.15), var(--schaduw);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: .4vmin;
+    color: #fff;
+    font-weight: bold;
+    font-size: clamp(12px, 2.6vmin, 24px);
+    transition: transform .12s;
+    padding: .5vmin;
+  }
+  .room-door:hover { transform: scale(1.05) rotate(-1deg); }
+  .room-door:active { transform: scale(.94); }
+  .room-door .r-icon { font-size: clamp(28px, 7vmin, 64px); line-height: 1.1; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.2)); }
+  #hub-bottom {
+    flex: 0 0 auto;
+    display: flex; align-items: flex-end; justify-content: center;
+    gap: 3vmin;
+    padding: 1vmin 2vmin 1.6vmin;
+    font-size: clamp(30px, 7vmin, 60px);
+  }
+  .hub-cat, .hub-toy {
+    background: none; border: none;
+    font-size: inherit;
+    filter: drop-shadow(2px 4px 0 rgba(0,0,0,.2));
+    transition: transform .15s;
+  }
+  .hub-cat:hover, .hub-toy:hover { transform: scale(1.15); }
+
+  /* ---------- memory ---------- */
+  #memory-grid {
+    position: absolute; inset: 0;
+    display: grid; gap: 1.5vmin;
+    padding: 2vmin;
+    place-content: center;
+  }
+  .mem-card { perspective: 600px; background: none; padding: 0; width: var(--card); height: var(--card); }
+  .mem-inner {
+    width: 100%; height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform .35s;
+  }
+  .mem-card.flipped .mem-inner, .mem-card.matched .mem-inner { transform: rotateY(180deg); }
+  .mem-face {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    border-radius: 1.5vmin;
+    backface-visibility: hidden;
+    font-size: calc(var(--card) * .55);
+    box-shadow: var(--schaduw);
+  }
+  .mem-front { background: repeating-linear-gradient(45deg, #1e90ff 0 12px, #45a5ff 12px 24px); }
+  .mem-front::after { content: "⭐"; font-size: calc(var(--card) * .4); }
+  .mem-back { background: #fff; transform: rotateY(180deg); }
+  .mem-card.matched .mem-back { background: #d9ffd9; animation: pop-in .4s; }
+
+  /* ---------- puzzel & vormen ---------- */
+  .drag-item { position: absolute; touch-action: none; cursor: grab; }
+  .drag-item.dragging { z-index: 50; cursor: grabbing; filter: drop-shadow(0 8px 6px rgba(0,0,0,.3)); }
+  .drag-item.locked { cursor: default; }
+  .puz-slot-line { position: absolute; background: rgba(255,255,255,.6); }
+
+  /* ---------- knoppenrijen ---------- */
+  .choice-row {
+    display: flex; gap: 1.5vmin; flex-wrap: wrap; justify-content: center; align-items: center;
+  }
+  .level-btn {
+    font-size: clamp(16px, 3vmin, 26px);
+    padding: .3em .8em;
+    border-radius: 999px;
+    background: rgba(255,255,255,.85);
+    box-shadow: var(--schaduw);
+    font-weight: bold;
+  }
+  .level-btn.active { background: var(--geel); transform: scale(1.08); }
+
+  /* ---------- tellen ---------- */
+  #count-stage {
+    position: absolute; inset: 0 0 30% 0;
+    display: flex; flex-wrap: wrap; align-content: center; justify-content: center;
+    gap: 2vmin;
+    font-size: clamp(36px, 9vmin, 90px);
+    padding: 2vmin;
+  }
+  #count-stage span { animation: floaty 2s ease-in-out infinite; filter: drop-shadow(2px 4px 0 rgba(0,0,0,.15)); }
+  #count-answers {
+    position: absolute; left: 0; right: 0; bottom: 2vmin;
+    display: flex; justify-content: center; gap: 3vmin;
+  }
+  .num-btn {
+    font-size: clamp(30px, 7vmin, 64px);
+    width: 2em; height: 2em;
+    border-radius: 2vmin;
+    background: #fff;
+    font-weight: bold;
+    color: var(--blauw);
+    box-shadow: var(--schaduw);
+    transition: transform .1s;
+  }
+  .num-btn:active { transform: scale(.9); }
+
+  /* ---------- kleuren ---------- */
+  #paint-wrap { position: absolute; inset: 0; display: flex; }
+  #paint-tools {
+    flex: 0 0 auto;
+    display: flex; flex-direction: column; gap: 1vmin;
+    padding: 1.5vmin;
+    align-items: center;
+    overflow-y: auto;
+  }
+  .paint-color {
+    width: clamp(34px, 6vmin, 54px); height: clamp(34px, 6vmin, 54px);
+    border-radius: 50%;
+    border: 4px solid #fff;
+    box-shadow: var(--schaduw);
+    transition: transform .1s;
+  }
+  .paint-color.active { transform: scale(1.25); border-color: #333; }
+  #paint-board {
+    flex: 1; position: relative; margin: 1.5vmin;
+    background: #fff; border-radius: 2vmin;
+    box-shadow: var(--schaduw);
+    overflow: hidden;
+  }
+  #paint-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+  #paint-outline { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  /* ---------- verkleedkamer ---------- */
+  #dress-wrap { position: absolute; inset: 0; display: flex; align-items: stretch; }
+  #dress-cat { flex: 1; display: grid; place-items: center; min-width: 0; }
+  #dress-cat svg { width: min(90%, 70vmin); height: 90%; }
+  #dress-panel {
+    flex: 0 0 auto; width: clamp(150px, 26vmin, 260px);
+    display: flex; flex-direction: column; gap: 1.2vmin;
+    padding: 1.5vmin; overflow-y: auto;
+  }
+  .dress-btn {
+    font-size: clamp(16px, 3.2vmin, 28px);
+    padding: .45em .6em;
+    border-radius: 1.5vmin;
+    background: #fff;
+    box-shadow: var(--schaduw);
+    font-weight: bold;
+    text-align: left;
+  }
+  .dress-btn:active { transform: scale(.95); }
+
+  /* ---------- speelkamer ---------- */
+  #busy-grid {
+    position: absolute; inset: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 1fr;
+    gap: 2vmin; padding: 2.5vmin;
+  }
+  .busy-cell {
+    background: rgba(255,255,255,.85);
+    border-radius: 2.5vmin;
+    box-shadow: var(--schaduw);
+    display: grid; place-items: center;
+    font-size: clamp(30px, 7vmin, 64px);
+    overflow: hidden;
+  }
+  .busy-btn {
+    height: 72%; max-width: 82%; aspect-ratio: 1;
+    border-radius: 50%;
+    box-shadow: inset 0 -8px 0 rgba(0,0,0,.25), var(--schaduw);
+    font-size: clamp(24px, 6vmin, 54px);
+    display: grid; place-items: center;
+  }
+  .busy-btn:active { box-shadow: inset 0 4px 0 rgba(0,0,0,.25); transform: translateY(4px); }
+  .lamp { transition: filter .2s, opacity .2s; opacity: .3; filter: grayscale(1); }
+  .lamp.on { opacity: 1; filter: none; animation: pop-in .3s; }
+  .switch {
+    width: clamp(64px, 12vmin, 110px); height: clamp(36px, 6.5vmin, 60px);
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: #ccc;
+    position: relative;
+    box-shadow: inset 0 4px 6px rgba(0,0,0,.25);
+  }
+  .switch::after {
+    content: "";
+    position: absolute; top: 6%; left: 4%;
+    width: 46%; height: 88%;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: var(--schaduw);
+    transition: left .15s;
+  }
+  .switch.on { background: var(--groen); }
+  .switch.on::after { left: 50%; }
+  input[type=range].busy-slider { width: 80%; height: 3vmin; accent-color: var(--paars); }
+
+  /* ---------- stickerboek ---------- */
+  #book-wrap { position: absolute; inset: 0; display: flex; }
+  #sticker-shelf {
+    flex: 0 0 auto; width: clamp(120px, 20vmin, 200px);
+    background: rgba(255,255,255,.75);
+    border-radius: 2vmin;
+    margin: 1.5vmin;
+    padding: 1vmin;
+    display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: center;
+    gap: 1vmin;
+    overflow-y: auto;
+  }
+  #book-page {
+    flex: 1; position: relative;
+    margin: 1.5vmin;
+    background: #fffbe8;
+    border-radius: 2vmin;
+    box-shadow: var(--schaduw);
+    overflow: hidden;
+  }
+  #book-page::before {
+    content: "Stickerboek van SEP";
+    position: absolute; top: 1vmin; left: 0; right: 0;
+    text-align: center;
+    font-size: clamp(18px, 4vmin, 36px);
+    font-weight: bold;
+    color: #d8c98a;
+    pointer-events: none;
+  }
+  .sticker {
+    font-size: clamp(34px, 8vmin, 72px);
+    filter: drop-shadow(2px 3px 2px rgba(0,0,0,.25));
+    line-height: 1;
+  }
+  .sticker-locked {
+    font-size: clamp(28px, 6vmin, 56px);
+    opacity: .35;
+    display: grid; place-items: center;
+  }
+
+  /* ---------- effecten ---------- */
+  #fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 450; overflow: hidden; }
+  .confetti-bit { position: absolute; top: -6vh; font-size: clamp(16px, 4vmin, 34px); animation: confetti-fall linear forwards; }
+  .fly-thing { position: absolute; font-size: clamp(40px, 10vmin, 90px); animation: fly-across linear forwards; filter: drop-shadow(2px 4px 0 rgba(0,0,0,.2)); }
+  .float-thing { position: absolute; font-size: clamp(36px, 9vmin, 80px); animation: float-up 2.2s ease-out forwards; }
+  #big-msg {
+    position: fixed; left: 50%; top: 40%;
+    transform: translate(-50%, -50%);
+    z-index: 460;
+    font-size: clamp(30px, 8vmin, 80px);
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 3px 4px 0 rgba(0,0,0,.3);
+    background: linear-gradient(135deg, var(--oranje), var(--rood));
+    border-radius: 3vmin;
+    padding: .4em .8em;
+    pointer-events: none;
+    opacity: 0;
+    white-space: nowrap;
+  }
+  #big-msg.show { animation: msg-pop 1.8s forwards; }
+
+  .wiggle { animation: wiggle .5s; }
+  .spin-once { animation: spin-once .7s; }
+  body.disco { animation: disco 0.6s linear 6; }
+
+  @keyframes pop-in { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
+  @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  @keyframes wiggle { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } 75% { transform: rotate(14deg); } }
+  @keyframes spin-once { to { transform: rotate(360deg); } }
+  @keyframes confetti-fall {
+    to { transform: translateY(115vh) rotate(600deg); }
+  }
+  @keyframes fly-across {
+    from { transform: translateX(-15vw) rotate(-8deg); }
+    to { transform: translateX(115vw) rotate(8deg); }
+  }
+  @keyframes float-up {
+    from { transform: translateY(0) scale(.6); opacity: 1; }
+    to { transform: translateY(-45vh) scale(1.4); opacity: 0; }
+  }
+  @keyframes msg-pop {
+    0% { opacity: 0; transform: translate(-50%,-50%) scale(0); }
+    15% { opacity: 1; transform: translate(-50%,-50%) scale(1.15); }
+    25% { transform: translate(-50%,-50%) scale(1); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(1.1); }
+  }
+  @keyframes disco { 0% { filter: hue-rotate(0); } 100% { filter: hue-rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="fx-layer"></div>
+<div id="big-msg"></div>
+<button id="sound-btn" class="icon-btn" title="Geluid aan/uit">🔊</button>
+
+<div id="start-overlay">
+  <div id="start-card">
+    <div class="cat-wrap" id="start-cat"></div>
+    <h1>Het Kattenhuis<br>van Sep</h1>
+    <button id="start-btn" class="big-btn">▶ &nbsp;Spelen!</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   Hulpjes
+   ============================================================ */
+const $ = sel => document.querySelector(sel);
+const NAAM = "Sep";
+const randInt = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ============================================================
+   Geluid (WebAudio, geen bestanden)
+   ============================================================ */
+let audioCtx = null;
+let soundOn = localStorage.getItem("kh_sound") !== "uit";
+
+function ctx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function tone(freq, dur = 0.15, { type = "sine", vol = 0.2, delay = 0, glide = null } = {}) {
+  if (!soundOn) return;
+  const ac = ctx();
+  const t0 = ac.currentTime + delay;
+  const osc = ac.createOscillator();
+  const g = ac.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t0);
+  if (glide) osc.frequency.exponentialRampToValueAtTime(glide, t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(g).connect(ac.destination);
+  osc.start(t0);
+  osc.stop(t0 + dur + 0.05);
+}
+
+function noiseBurst(dur = 0.2, vol = 0.25) {
+  if (!soundOn) return;
+  const ac = ctx();
+  const buf = ac.createBuffer(1, ac.sampleRate * dur, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  const g = ac.createGain();
+  g.gain.value = vol;
+  src.connect(g).connect(ac.destination);
+  src.start();
+}
+
+const sfx = {
+  klik()   { tone(600, 0.08, { type: "square", vol: 0.08 }); },
+  plop()   { tone(300, 0.12, { type: "sine", glide: 700, vol: 0.25 }); },
+  goed()   { [523, 659, 784].forEach((f, i) => tone(f, 0.15, { delay: i * 0.09, type: "triangle", vol: 0.22 })); },
+  fanfare(){ [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, 0.18, { delay: i * 0.12, type: "triangle", vol: 0.25 })); },
+  oeps()   { tone(300, 0.25, { type: "sine", glide: 200, vol: 0.15 }); },
+  miauw()  { tone(700, 0.28, { type: "sawtooth", glide: 420, vol: 0.1 }); tone(1000, 0.2, { type: "sine", glide: 500, vol: 0.08, delay: 0.05 }); },
+  boing()  { tone(150, 0.3, { type: "sine", glide: 500, vol: 0.25 }); },
+  toeter() { tone(220, 0.4, { type: "sawtooth", vol: 0.18 }); tone(277, 0.4, { type: "sawtooth", vol: 0.14 }); },
+  trommel(){ noiseBurst(0.15, 0.3); tone(90, 0.15, { type: "sine", vol: 0.35 }); },
+  bel()    { tone(880, 0.5, { type: "triangle", vol: 0.2 }); tone(1108, 0.5, { type: "triangle", vol: 0.15, delay: 0.25 }); },
+  koekoek(){ tone(740, 0.25, { type: "sine", vol: 0.25 }); tone(587, 0.35, { type: "sine", vol: 0.25, delay: 0.3 }); },
+};
+
+/* ============================================================
+   Nederlandse stem
+   ============================================================ */
+let nlVoice = null;
+function findVoice() {
+  const voices = speechSynthesis.getVoices();
+  nlVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith("nl")) || null;
+}
+if ("speechSynthesis" in window) {
+  findVoice();
+  speechSynthesis.onvoiceschanged = findVoice;
+}
+function speak(text) {
+  if (!soundOn || !("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "nl-NL";
+  if (nlVoice) u.voice = nlVoice;
+  u.rate = 0.95;
+  u.pitch = 1.15;
+  speechSynthesis.speak(u);
+}
+
+const AANMOEDIGINGEN = [
+  `Goed zo, ${NAAM}!`,
+  `Wauw ${NAAM}, wat kun jij dat goed!`,
+  `Knap hoor, ${NAAM}!`,
+  `Super, ${NAAM}!`,
+  `Jaaa, gevonden!`,
+  `Jij bent een echte kampioen, ${NAAM}!`,
+  `Fantastisch, ${NAAM}!`,
+  `Toppie, ${NAAM}!`,
+];
+const PROBEER_NOG = [
+  `Bijna, ${NAAM}! Probeer nog een keertje.`,
+  `Oeps! Probeer maar opnieuw, ${NAAM}.`,
+  `Net niet! Jij kan het, ${NAAM}!`,
+  `Hmm, kijk nog eens goed, ${NAAM}!`,
+];
+function moedigAan() { sfx.goed(); speak(pick(AANMOEDIGINGEN)); }
+function probeerNog() { sfx.oeps(); speak(pick(PROBEER_NOG)); }
+
+function bigMsg(text) {
+  const el = $("#big-msg");
+  el.textContent = text;
+  el.classList.remove("show");
+  void el.offsetWidth;
+  el.classList.add("show");
+}
+
+/* ============================================================
+   Effecten: confetti, dingen die voorbij vliegen
+   ============================================================ */
+const CONFETTI = ["🎉", "⭐", "🎊", "✨", "🌟", "🟠", "🔵", "🟢", "🟡", "🟣"];
+function confetti(n = 26) {
+  const layer = $("#fx-layer");
+  for (let i = 0; i < n; i++) {
+    const bit = document.createElement("div");
+    bit.className = "confetti-bit";
+    bit.textContent = pick(CONFETTI);
+    bit.style.left = Math.random() * 100 + "vw";
+    bit.style.animationDuration = 1.4 + Math.random() * 1.6 + "s";
+    bit.style.animationDelay = Math.random() * 0.5 + "s";
+    layer.appendChild(bit);
+    setTimeout(() => bit.remove(), 3800);
+  }
+}
+function flyAcross(emoji) {
+  const layer = $("#fx-layer");
+  const el = document.createElement("div");
+  el.className = "fly-thing";
+  el.textContent = emoji;
+  el.style.top = 10 + Math.random() * 60 + "vh";
+  el.style.animationDuration = 1.5 + Math.random() * 1.5 + "s";
+  layer.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+function floatUp(emoji, xvw) {
+  const layer = $("#fx-layer");
+  const el = document.createElement("div");
+  el.className = "float-thing";
+  el.textContent = emoji;
+  el.style.left = (xvw ?? 20 + Math.random() * 60) + "vw";
+  el.style.bottom = "10vh";
+  layer.appendChild(el);
+  setTimeout(() => el.remove(), 2400);
+}
+
+/* ============================================================
+   Stickers (voortgang in localStorage)
+   ============================================================ */
+const STICKER_POOL = ["🦸", "🚀", "😺", "🚒", "🦖", "⭐", "🏴‍☠️", "⚽", "🌈", "🐬", "🛡️", "🏆"];
+function stickerState() {
+  try { return JSON.parse(localStorage.getItem("kh_stickers")) || { earned: 0, pos: {} }; }
+  catch { return { earned: 0, pos: {} }; }
+}
+function saveStickerState(s) { localStorage.setItem("kh_stickers", JSON.stringify(s)); }
+
+function awardSticker() {
+  const s = stickerState();
+  if (s.earned >= STICKER_POOL.length) {
+    confetti(40);
+    sfx.fanfare();
+    speak(`Wauw ${NAAM}, je hebt al je stickers al verdiend! Wat knap!`);
+    return;
+  }
+  const emoji = STICKER_POOL[s.earned];
+  s.earned++;
+  saveStickerState(s);
+  confetti(40);
+  sfx.fanfare();
+  bigMsg(`Sticker! ${emoji}`);
+  speak(`${NAAM}, je hebt een sticker verdiend! Kijk maar in je stickerboek!`);
+}
+
+/* ============================================================
+   Sleep-hulpje (muis + touch)
+   ============================================================ */
+function maakSleepbaar(el, { onDrop, onStart } = {}) {
+  el.classList.add("drag-item");
+  el.addEventListener("pointerdown", e => {
+    if (el.classList.contains("locked")) return;
+    e.preventDefault();
+    if (onStart) onStart(el, e);
+    el.setPointerCapture(e.pointerId);
+    el.classList.add("dragging");
+    const startLeft = parseFloat(el.style.left) || 0;
+    const startTop = parseFloat(el.style.top) || 0;
+    const px = e.clientX, py = e.clientY;
+    const move = ev => {
+      el.style.left = startLeft + (ev.clientX - px) + "px";
+      el.style.top = startTop + (ev.clientY - py) + "px";
+    };
+    const up = ev => {
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointercancel", up);
+      el.classList.remove("dragging");
+      if (onDrop) onDrop(el, ev);
+    };
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+  });
+}
+function midden(el) {
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+
+/* ============================================================
+   SVG-katjes
+   ============================================================ */
+function catSVG(kleur, accent = "#fff") {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="22,38 14,8 42,24" fill="${kleur}" stroke="#333" stroke-width="2.5" stroke-linejoin="round"/>
+    <polygon points="78,38 86,8 58,24" fill="${kleur}" stroke="#333" stroke-width="2.5" stroke-linejoin="round"/>
+    <polygon points="23,32 19,15 34,24" fill="#ffb3c1"/>
+    <polygon points="77,32 81,15 66,24" fill="#ffb3c1"/>
+    <circle cx="50" cy="55" r="34" fill="${kleur}" stroke="#333" stroke-width="2.5"/>
+    <circle cx="37" cy="48" r="5.5" fill="#333"/>
+    <circle cx="63" cy="48" r="5.5" fill="#333"/>
+    <circle cx="39" cy="46" r="1.8" fill="#fff"/>
+    <circle cx="65" cy="46" r="1.8" fill="#fff"/>
+    <polygon points="50,58 45,64 55,64" fill="#ff6b81"/>
+    <path d="M50 64 Q45 72 38 69 M50 64 Q55 72 62 69" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M20 55 L5 50 M20 62 L6 63 M80 55 L95 50 M80 62 L94 63" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="30" cy="62" r="5" fill="${accent}" opacity=".55"/>
+    <circle cx="70" cy="62" r="5" fill="${accent}" opacity=".55"/>
+  </svg>`;
+}
+
+/* ============================================================
+   Scene-manager
+   ============================================================ */
+const scenes = {};
+let huidigeCleanup = null;
+function gaNaar(naam) {
+  if (huidigeCleanup) { huidigeCleanup(); huidigeCleanup = null; }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  const app = $("#app");
+  app.innerHTML = "";
+  huidigeCleanup = scenes[naam](app) || null;
+}
+
+function roomTop(app, titel, kleur) {
+  const top = document.createElement("div");
+  top.className = "room-top";
+  top.innerHTML = `<button class="icon-btn" id="back-btn" title="Terug naar het huis">🏠</button>
+    <div class="room-title">${titel}</div>`;
+  app.appendChild(top);
+  $("#back-btn").addEventListener("click", () => { sfx.klik(); gaNaar("hub"); });
+  const body = document.createElement("div");
+  body.className = "room-body";
+  app.appendChild(body);
+  document.body.style.background = kleur;
+  return body;
+}
+
+/* ============================================================
+   HUB: het kattenhuis
+   ============================================================ */
+const KAMERS = [
+  { id: "memory",   icon: "🎴", naam: "Memory",      kleur: "#1e90ff" },
+  { id: "puzzel",   icon: "🧩", naam: "Puzzel",      kleur: "#2ecc40" },
+  { id: "vormen",   icon: "🔷", naam: "Vormen",      kleur: "#ff851b" },
+  { id: "tellen",   icon: "🔢", naam: "Tellen",      kleur: "#9b59b6" },
+  { id: "kleuren",  icon: "🎨", naam: "Kleuren",     kleur: "#ff4136" },
+  { id: "verkleden",icon: "🦸", naam: "Verkleden",   kleur: "#00b5ad" },
+  { id: "speel",    icon: "🎪", naam: "Speelkamer",  kleur: "#f012be" },
+  { id: "stickers", icon: "⭐", naam: "Stickers",    kleur: "#ffb700" },
+];
+
+const KAT_REACTIES = [
+  { doe: el => { el.classList.add("wiggle"); sfx.miauw(); }, zeg: ["Miauw!", "Miauw miauw!", "Prrrr!"] },
+  { doe: el => { el.classList.add("spin-once"); sfx.boing(); }, zeg: ["Wiehoe, een koprol!", "Kiekeboe!"] },
+  { doe: el => { el.classList.add("wiggle"); sfx.plop(); floatUp("❤️"); }, zeg: [`Ik vind jou lief, ${NAAM}!`, "Knuffel!"] },
+  { doe: el => { el.classList.add("spin-once"); sfx.miauw(); floatUp("🐟"); }, zeg: ["Ik lust wel een visje!", "Mmm, visjes!"] },
+];
+
+scenes.hub = function (app) {
+  document.body.style.background = "linear-gradient(#7ec8ff, #d8f3ff 70%, #9be89b)";
+  const hub = document.createElement("div");
+  hub.id = "hub";
+  hub.innerHTML = `
+    <div id="hub-title">🌈 Het Kattenhuis van ${NAAM} 🏠</div>
+    <div id="house">
+      <div id="roof">⭐ ${NAAM.toUpperCase()} ⭐</div>
+      <div id="rooms"></div>
+    </div>
+    <div id="hub-bottom">
+      <button class="hub-toy" id="bel-btn" title="Deurbel">🔔</button>
+      <button class="hub-cat">😺</button>
+      <button class="hub-cat">😸</button>
+      <button class="hub-cat">😻</button>
+      <button class="hub-toy" id="klok-btn" title="Koekoeksklok">🕰️</button>
+    </div>`;
+  app.appendChild(hub);
+
+  const rooms = $("#rooms");
+  for (const kamer of KAMERS) {
+    const d = document.createElement("button");
+    d.className = "room-door";
+    d.style.background = kamer.kleur;
+    d.innerHTML = `<span class="r-icon">${kamer.icon}</span><span>${kamer.naam}</span>`;
+    d.addEventListener("click", () => { sfx.plop(); gaNaar(kamer.id); });
+    rooms.appendChild(d);
+  }
+
+  hub.querySelectorAll(".hub-cat").forEach(kat => {
+    kat.addEventListener("click", () => {
+      kat.classList.remove("wiggle", "spin-once");
+      void kat.offsetWidth;
+      const r = pick(KAT_REACTIES);
+      r.doe(kat);
+      speak(pick(r.zeg));
+    });
+  });
+  $("#bel-btn").addEventListener("click", () => {
+    sfx.bel();
+    speak(pick(["Ding dong! Wie is daar?", `Ding dong! Hoi ${NAAM}!`, "Ding dong! Bezoek voor de katjes!"]));
+    floatUp(pick(["😺", "🐶", "🐰", "🦊"]));
+  });
+  $("#klok-btn").addEventListener("click", () => {
+    sfx.koekoek();
+    floatUp("🐦");
+    speak(pick(["Koekoek! Koekoek!", "Koekoek! Tijd om te spelen!"]));
+  });
+};
+
+/* ============================================================
+   MEMORY
+   ============================================================ */
+const MEM_EMOJIS = ["😺", "🚀", "🦖", "⚽", "🚒", "🐟", "🌈", "🦸", "🏴‍☠️", "🐢"];
+
+scenes.memory = function (app) {
+  const body = roomTop(app, "🎴 Memory: zoek de paartjes!", "linear-gradient(#1e90ff, #7ec8ff)");
+  const top = app.querySelector(".room-top");
+  const lvlRow = document.createElement("div");
+  lvlRow.className = "choice-row";
+  lvlRow.innerHTML = `
+    <button class="level-btn" data-p="4">⭐ 4</button>
+    <button class="level-btn" data-p="6">⭐⭐ 6</button>
+    <button class="level-btn" data-p="8">⭐⭐⭐ 8</button>`;
+  top.appendChild(lvlRow);
+
+  let bezig = false;
+  let eerste = null;
+  let gevonden = 0;
+  let paren = 4;
+
+  function bouw(p) {
+    paren = p;
+    gevonden = 0;
+    eerste = null;
+    bezig = false;
+    lvlRow.querySelectorAll(".level-btn").forEach(b => b.classList.toggle("active", +b.dataset.p === p));
+    body.innerHTML = `<div id="memory-grid"></div>`;
+    const grid = $("#memory-grid");
+    const kolommen = p === 4 ? 4 : p === 6 ? 4 : 4;
+    const rijen = Math.ceil((p * 2) / kolommen);
+    grid.style.gridTemplateColumns = `repeat(${kolommen}, var(--card))`;
+    const kaartMaat = Math.min(
+      (body.clientWidth - 60) / kolommen - 12,
+      (body.clientHeight - 60) / rijen - 12
+    );
+    grid.style.setProperty("--card", Math.max(56, kaartMaat) + "px");
+
+    const faces = shuffle(shuffle(MEM_EMOJIS).slice(0, p).flatMap(f => [f, f]));
+    for (const face of faces) {
+      const kaart = document.createElement("button");
+      kaart.className = "mem-card";
+      kaart.innerHTML = `<div class="mem-inner">
+        <div class="mem-face mem-front"></div>
+        <div class="mem-face mem-back">${face}</div>
+      </div>`;
+      kaart.dataset.face = face;
+      kaart.addEventListener("click", () => draai(kaart));
+      grid.appendChild(kaart);
+    }
+  }
+
+  function draai(kaart) {
+    if (bezig || kaart.classList.contains("flipped") || kaart.classList.contains("matched")) return;
+    sfx.klik();
+    kaart.classList.add("flipped");
+    if (!eerste) { eerste = kaart; return; }
+    bezig = true;
+    const a = eerste, b = kaart;
+    eerste = null;
+    if (a.dataset.face === b.dataset.face) {
+      setTimeout(() => {
+        a.classList.add("matched"); b.classList.add("matched");
+        a.classList.remove("flipped"); b.classList.remove("flipped");
+        gevonden++;
+        bezig = false;
+        if (gevonden === paren) {
+          moedigAan();
+          setTimeout(() => { awardSticker(); }, 700);
+          setTimeout(() => bouw(paren), 3200);
+        } else {
+          sfx.plop();
+        }
+      }, 450);
+    } else {
+      setTimeout(() => {
+        a.classList.remove("flipped");
+        b.classList.remove("flipped");
+        bezig = false;
+      }, 900);
+    }
+  }
+
+  lvlRow.querySelectorAll(".level-btn").forEach(b =>
+    b.addEventListener("click", () => { sfx.klik(); bouw(+b.dataset.p); })
+  );
+
+  bouw(4);
+  speak(`${NAAM}, zoek de twee plaatjes die hetzelfde zijn!`);
+};
+
+/* ============================================================
+   PUZZEL (sleep-puzzel met SVG-scènes)
+   ============================================================ */
+const PUZZEL_SCENES = [
+  {
+    naam: "raket",
+    svg: `
+      <rect width="300" height="300" fill="#1a2456"/>
+      <circle cx="45" cy="45" r="22" fill="#fff8d0"/>
+      <circle cx="38" cy="38" r="6" fill="#e8e0b0"/>
+      <g fill="#fff"><circle cx="120" cy="30" r="3"/><circle cx="200" cy="60" r="4"/><circle cx="260" cy="30" r="3"/>
+      <circle cx="30" cy="140" r="3"/><circle cx="270" cy="140" r="4"/><circle cx="70" cy="250" r="3"/><circle cx="250" cy="240" r="3"/></g>
+      <circle cx="245" cy="200" r="30" fill="#ff851b"/><ellipse cx="245" cy="200" rx="44" ry="8" fill="none" stroke="#ffd700" stroke-width="4"/>
+      <g>
+        <polygon points="150,30 178,90 122,90" fill="#ff4136"/>
+        <rect x="122" y="90" width="56" height="110" rx="8" fill="#e8e8e8"/>
+        <circle cx="150" cy="125" r="20" fill="#7ec8ff" stroke="#1e90ff" stroke-width="5"/>
+        <polygon points="122,160 95,215 122,200" fill="#ff851b"/>
+        <polygon points="178,160 205,215 178,200" fill="#ff851b"/>
+        <polygon points="135,200 150,245 165,200" fill="#ffd700"/>
+        <g transform="translate(133,108) scale(.34)">${""}
+          <circle cx="50" cy="55" r="34" fill="#ff9f43"/>
+          <polygon points="22,38 14,8 42,24" fill="#ff9f43"/><polygon points="78,38 86,8 58,24" fill="#ff9f43"/>
+          <circle cx="37" cy="48" r="6" fill="#333"/><circle cx="63" cy="48" r="6" fill="#333"/>
+          <path d="M50 64 Q45 72 38 69 M50 64 Q55 72 62 69" fill="none" stroke="#333" stroke-width="3"/>
+          <polygon points="50,58 45,64 55,64" fill="#ff6b81"/>
+        </g>
+      </g>`,
+  },
+  {
+    naam: "brandweer",
+    svg: `
+      <rect width="300" height="300" fill="#aee6ff"/>
+      <circle cx="250" cy="45" r="26" fill="#ffd700"/>
+      <rect x="0" y="230" width="300" height="70" fill="#666"/>
+      <rect x="0" y="258" width="40" height="8" fill="#fff"/><rect x="70" y="258" width="40" height="8" fill="#fff"/>
+      <rect x="140" y="258" width="40" height="8" fill="#fff"/><rect x="210" y="258" width="40" height="8" fill="#fff"/>
+      <rect x="30" y="140" width="180" height="90" rx="10" fill="#ff4136"/>
+      <rect x="210" y="165" width="60" height="65" rx="8" fill="#ff4136"/>
+      <rect x="222" y="175" width="36" height="28" rx="4" fill="#aee6ff" stroke="#333" stroke-width="3"/>
+      <rect x="45" y="120" width="150" height="16" rx="6" fill="#ddd" stroke="#999" stroke-width="2"/>
+      <rect x="55" y="155" width="130" height="10" fill="#ffd700"/>
+      <circle cx="75" cy="235" r="24" fill="#333"/><circle cx="75" cy="235" r="10" fill="#bbb"/>
+      <circle cx="235" cy="235" r="24" fill="#333"/><circle cx="235" cy="235" r="10" fill="#bbb"/>
+      <rect x="228" y="150" width="18" height="12" rx="4" fill="#1e90ff"/>
+      <g transform="translate(224,168) scale(.32)">
+        <circle cx="50" cy="55" r="34" fill="#666"/>
+        <polygon points="22,38 14,8 42,24" fill="#666"/><polygon points="78,38 86,8 58,24" fill="#666"/>
+        <circle cx="37" cy="48" r="6" fill="#fff"/><circle cx="63" cy="48" r="6" fill="#fff"/>
+        <circle cx="37" cy="48" r="3" fill="#333"/><circle cx="63" cy="48" r="3" fill="#333"/>
+        <polygon points="50,58 45,64 55,64" fill="#ff6b81"/>
+      </g>`,
+  },
+  {
+    naam: "huis",
+    svg: `
+      <rect width="300" height="300" fill="#7ec8ff"/>
+      <circle cx="50" cy="50" r="24" fill="#ffd700"/>
+      <path d="M0 300 Q75 260 150 300 Q225 260 300 300 Z" fill="#2ecc40"/>
+      <path d="M60 120 A90 90 0 0 1 240 120" fill="none" stroke="#ff4136" stroke-width="8"/>
+      <path d="M72 120 A78 78 0 0 1 228 120" fill="none" stroke="#ff851b" stroke-width="8"/>
+      <path d="M84 120 A66 66 0 0 1 216 120" fill="none" stroke="#ffd700" stroke-width="8"/>
+      <polygon points="150,95 235,155 65,155" fill="#ff4136"/>
+      <rect x="80" y="155" width="140" height="115" fill="#ffb45e" stroke="#b06a2a" stroke-width="5"/>
+      <rect x="95" y="170" width="40" height="35" fill="#aee6ff" stroke="#333" stroke-width="3"/>
+      <rect x="165" y="170" width="40" height="35" fill="#aee6ff" stroke="#333" stroke-width="3"/>
+      <rect x="128" y="215" width="44" height="55" rx="5" fill="#9b59b6" stroke="#333" stroke-width="3"/>
+      <g transform="translate(97,172) scale(.34)">
+        <circle cx="50" cy="55" r="30" fill="#ff9f43"/>
+        <polygon points="24,40 18,14 42,28" fill="#ff9f43"/><polygon points="76,40 82,14 58,28" fill="#ff9f43"/>
+        <circle cx="38" cy="50" r="5" fill="#333"/><circle cx="62" cy="50" r="5" fill="#333"/>
+        <polygon points="50,58 46,63 54,63" fill="#ff6b81"/>
+      </g>
+      <g transform="translate(167,172) scale(.34)">
+        <circle cx="50" cy="55" r="30" fill="#aaa"/>
+        <polygon points="24,40 18,14 42,28" fill="#aaa"/><polygon points="76,40 82,14 58,28" fill="#aaa"/>
+        <circle cx="38" cy="50" r="5" fill="#333"/><circle cx="62" cy="50" r="5" fill="#333"/>
+        <polygon points="50,58 46,63 54,63" fill="#ff6b81"/>
+      </g>`,
+  },
+];
+
+scenes.puzzel = function (app) {
+  const body = roomTop(app, "🧩 Puzzel: sleep de stukjes!", "linear-gradient(#2ecc40, #b8f0b8)");
+  const top = app.querySelector(".room-top");
+  const lvlRow = document.createElement("div");
+  lvlRow.className = "choice-row";
+  lvlRow.innerHTML = `
+    <button class="level-btn" data-g="2,2">⭐ 4</button>
+    <button class="level-btn" data-g="3,2">⭐⭐ 6</button>
+    <button class="level-btn" data-g="3,3">⭐⭐⭐ 9</button>`;
+  top.appendChild(lvlRow);
+
+  let sceneIdx = randInt(0, PUZZEL_SCENES.length - 1);
+  let grid = [2, 2];
+
+  function sceneSVG(binnen, vb) {
+    return `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block">${binnen}</svg>`;
+  }
+
+  function bouw() {
+    lvlRow.querySelectorAll(".level-btn").forEach(b => b.classList.toggle("active", b.dataset.g === grid.join(",")));
+    body.innerHTML = "";
+    const scene = PUZZEL_SCENES[sceneIdx];
+    const [cols, rows] = grid;
+    const totaal = cols * rows;
+
+    const bordMaat = Math.min(body.clientHeight * 0.62, body.clientWidth * 0.55, 460);
+    const bord = document.createElement("div");
+    bord.style.cssText = `position:absolute; left:3vmin; top:50%; transform:translateY(-56%);
+      width:${bordMaat}px; height:${bordMaat}px; border-radius:12px; overflow:hidden;
+      box-shadow: var(--schaduw); background:#fff;`;
+    bord.innerHTML = `<div style="position:absolute;inset:0;opacity:.28">${sceneSVG(scene.svg, "0 0 300 300")}</div>`;
+    body.appendChild(bord);
+    for (let c = 1; c < cols; c++) {
+      const l = document.createElement("div");
+      l.className = "puz-slot-line";
+      l.style.cssText = `left:${(c / cols) * 100}%; top:0; bottom:0; width:2px;`;
+      bord.appendChild(l);
+    }
+    for (let r = 1; r < rows; r++) {
+      const l = document.createElement("div");
+      l.className = "puz-slot-line";
+      l.style.cssText = `top:${(r / rows) * 100}%; left:0; right:0; height:2px;`;
+      bord.appendChild(l);
+    }
+
+    const stukW = bordMaat / cols, stukH = bordMaat / rows;
+    const bordRect = () => bord.getBoundingClientRect();
+    const bodyRect = () => body.getBoundingClientRect();
+    let klaar = 0;
+
+    const rijenTray = Math.ceil(totaal / 2);
+    const rijAfstand = Math.min(stukH + 12, (body.clientHeight - stukH - 28) / Math.max(1, rijenTray - 1));
+    const volgorde = shuffle(Array.from({ length: totaal }, (_, i) => i));
+    volgorde.forEach((i, n) => {
+      const c = i % cols, r = Math.floor(i / cols);
+      const stuk = document.createElement("div");
+      const vb = `${(300 / cols) * c} ${(300 / rows) * r} ${300 / cols} ${300 / rows}`;
+      stuk.innerHTML = sceneSVG(scene.svg, vb);
+      stuk.style.width = stukW + "px";
+      stuk.style.height = stukH + "px";
+      stuk.style.borderRadius = "8px";
+      stuk.style.overflow = "hidden";
+      stuk.style.boxShadow = "0 4px 8px rgba(0,0,0,.3)";
+      const kolomX = body.clientWidth - stukW - 24 - (n % 2) * (stukW + 18);
+      stuk.style.left = Math.max(bordMaat + 40, kolomX - randInt(0, 14)) + "px";
+      stuk.style.top = Math.min(14 + Math.floor(n / 2) * rijAfstand, body.clientHeight - stukH - 10) + "px";
+      body.appendChild(stuk);
+
+      maakSleepbaar(stuk, {
+        onDrop() {
+          const br = bordRect();
+          const doelX = br.left + c * stukW + stukW / 2;
+          const doelY = br.top + r * stukH + stukH / 2;
+          const m = midden(stuk);
+          const afstand = Math.hypot(m.x - doelX, m.y - doelY);
+          if (afstand < Math.min(stukW, stukH) * 0.4) {
+            const bo = bodyRect();
+            stuk.style.left = br.left - bo.left + c * stukW + "px";
+            stuk.style.top = br.top - bo.top + r * stukH + "px";
+            stuk.classList.add("locked");
+            stuk.style.boxShadow = "none";
+            sfx.plop();
+            klaar++;
+            if (klaar === totaal) {
+              moedigAan();
+              confetti(30);
+              setTimeout(() => awardSticker(), 700);
+              setTimeout(() => { sceneIdx = (sceneIdx + 1) % PUZZEL_SCENES.length; bouw(); }, 3400);
+            }
+          } else {
+            sfx.klik();
+          }
+        },
+      });
+    });
+  }
+
+  lvlRow.querySelectorAll(".level-btn").forEach(b =>
+    b.addEventListener("click", () => {
+      sfx.klik();
+      grid = b.dataset.g.split(",").map(Number);
+      bouw();
+    })
+  );
+
+  bouw();
+  speak(`${NAAM}, sleep de puzzelstukjes naar de goede plek!`);
+};
+
+/* ============================================================
+   VORMEN (schaduwpuzzel)
+   ============================================================ */
+const VORMEN = [
+  { id: "ster", svg: k => `<polygon points="50,5 61,38 95,38 67,58 78,92 50,71 22,92 33,58 5,38 39,38" fill="${k}" stroke="#333" stroke-width="3" stroke-linejoin="round"/>`, kleur: "#ffd700" },
+  { id: "hart", svg: k => `<path d="M50 88 C10 55 15 18 40 18 C48 18 50 26 50 26 C50 26 52 18 60 18 C85 18 90 55 50 88Z" fill="${k}" stroke="#333" stroke-width="3"/>`, kleur: "#ff4136" },
+  { id: "rondje", svg: k => `<circle cx="50" cy="50" r="40" fill="${k}" stroke="#333" stroke-width="3"/>`, kleur: "#1e90ff" },
+  { id: "vierkant", svg: k => `<rect x="12" y="12" width="76" height="76" rx="10" fill="${k}" stroke="#333" stroke-width="3"/>`, kleur: "#2ecc40" },
+  { id: "driehoek", svg: k => `<polygon points="50,8 92,88 8,88" fill="${k}" stroke="#333" stroke-width="3" stroke-linejoin="round"/>`, kleur: "#ff851b" },
+  { id: "bliksem", svg: k => `<polygon points="58,4 20,55 45,55 38,96 80,42 53,42" fill="${k}" stroke="#333" stroke-width="3" stroke-linejoin="round"/>`, kleur: "#9b59b6" },
+  { id: "maan", svg: k => `<path d="M62 5 A46 46 0 1 0 62 95 A38 38 0 1 1 62 5Z" fill="${k}" stroke="#333" stroke-width="3"/>`, kleur: "#00b5ad" },
+  { id: "raket", svg: k => `<g stroke="#333" stroke-width="3" stroke-linejoin="round"><polygon points="50,4 65,32 35,32" fill="${k}"/><rect x="35" y="32" width="30" height="40" fill="${k}"/><polygon points="35,60 18,88 35,80" fill="${k}"/><polygon points="65,60 82,88 65,80" fill="${k}"/><polygon points="42,72 50,95 58,72" fill="#ffd700"/><circle cx="50" cy="46" r="9" fill="#fff"/></g>`, kleur: "#ff4136" },
+];
+
+scenes.vormen = function (app) {
+  const body = roomTop(app, "🔷 Vormen: sleep naar de schaduw!", "linear-gradient(#ff851b, #ffd9a8)");
+  let ronde = 0;
+
+  function bouw() {
+    body.innerHTML = "";
+    const keuze = shuffle(VORMEN).slice(0, 4);
+    const doelen = shuffle(keuze);
+    const maat = Math.min(body.clientWidth / 5.2, body.clientHeight / 3.6, 150);
+    let klaar = 0;
+
+    doelen.forEach((v, i) => {
+      const slot = document.createElement("div");
+      slot.dataset.vorm = v.id;
+      slot.className = "vorm-slot";
+      slot.style.cssText = `position:absolute; width:${maat}px; height:${maat}px;
+        left:${(i + 0.35) * (body.clientWidth / 4.7)}px; top:6%;
+        background:rgba(255,255,255,.5); border-radius:14px; padding:6px;`;
+      slot.innerHTML = `<svg viewBox="0 0 100 100" style="width:100%;height:100%;opacity:.45">${v.svg("#555")}</svg>`;
+      body.appendChild(slot);
+    });
+
+    keuze.forEach((v, i) => {
+      const stuk = document.createElement("div");
+      stuk.dataset.vorm = v.id;
+      stuk.style.cssText = `width:${maat}px; height:${maat}px; padding:6px;`;
+      stuk.style.left = (i + 0.35) * (body.clientWidth / 4.7) + randInt(-16, 16) + "px";
+      stuk.style.top = body.clientHeight - maat - 30 + "px";
+      stuk.innerHTML = `<svg viewBox="0 0 100 100" style="width:100%;height:100%">${v.svg(v.kleur)}</svg>`;
+      body.appendChild(stuk);
+      const thuisL = stuk.style.left, thuisT = stuk.style.top;
+
+      maakSleepbaar(stuk, {
+        onDrop() {
+          const m = midden(stuk);
+          let geplaatst = false;
+          body.querySelectorAll(".vorm-slot").forEach(slot => {
+            if (slot.dataset.bezet) return;
+            const sm = midden(slot);
+            if (Math.hypot(m.x - sm.x, m.y - sm.y) < maat * 0.5) {
+              if (slot.dataset.vorm === stuk.dataset.vorm) {
+                const bo = body.getBoundingClientRect();
+                const sr = slot.getBoundingClientRect();
+                stuk.style.left = sr.left - bo.left + "px";
+                stuk.style.top = sr.top - bo.top + "px";
+                stuk.classList.add("locked");
+                slot.dataset.bezet = "1";
+                sfx.plop();
+                geplaatst = true;
+                klaar++;
+                if (klaar === 4) {
+                  moedigAan();
+                  confetti(25);
+                  ronde++;
+                  if (ronde % 2 === 0) setTimeout(() => awardSticker(), 700);
+                  setTimeout(bouw, 2800);
+                }
+              } else {
+                probeerNog();
+                stuk.style.left = thuisL;
+                stuk.style.top = thuisT;
+                geplaatst = true;
+              }
+            }
+          });
+          if (!geplaatst) sfx.klik();
+        },
+      });
+    });
+  }
+
+  bouw();
+  speak(`${NAAM}, sleep elke vorm naar zijn eigen schaduw!`);
+};
+
+/* ============================================================
+   TELLEN
+   ============================================================ */
+const TEL_DINGEN = [
+  { emoji: "🐟", naam: "visjes" },
+  { emoji: "🚀", naam: "raketten" },
+  { emoji: "😺", naam: "katjes" },
+  { emoji: "⚽", naam: "ballen" },
+  { emoji: "🎈", naam: "ballonnen" },
+  { emoji: "🦖", naam: "dino's" },
+];
+
+scenes.tellen = function (app) {
+  const body = roomTop(app, "🔢 Tellen: hoeveel zie je?", "linear-gradient(#9b59b6, #d9b8f0)");
+  let goedGeteld = 0;
+
+  function ronde() {
+    body.innerHTML = `<div id="count-stage"></div><div id="count-answers"></div>`;
+    const ding = pick(TEL_DINGEN);
+    const max = goedGeteld < 2 ? 5 : 10;
+    const n = randInt(1, max);
+    const stage = $("#count-stage");
+    for (let i = 0; i < n; i++) {
+      const s = document.createElement("span");
+      s.textContent = ding.emoji;
+      s.style.animationDelay = Math.random() * 2 + "s";
+      stage.appendChild(s);
+    }
+    const antwoorden = new Set([n]);
+    while (antwoorden.size < 3) {
+      const kandidaat = Math.max(1, Math.min(10, n + randInt(-3, 3)));
+      antwoorden.add(kandidaat);
+    }
+    const row = $("#count-answers");
+    shuffle([...antwoorden]).forEach(a => {
+      const b = document.createElement("button");
+      b.className = "num-btn";
+      b.textContent = a;
+      b.addEventListener("click", () => {
+        if (a === n) {
+          goedGeteld++;
+          moedigAan();
+          b.style.background = "#d9ffd9";
+          if (goedGeteld % 5 === 0) setTimeout(() => awardSticker(), 700);
+          setTimeout(ronde, 1400);
+        } else {
+          probeerNog();
+          b.style.opacity = ".35";
+        }
+      });
+      row.appendChild(b);
+    });
+    speak(`${NAAM}, hoeveel ${ding.naam} zie je?`);
+  }
+
+  ronde();
+};
+
+/* ============================================================
+   KLEUREN (canvas-kleurplaat)
+   ============================================================ */
+const KLEURPLATEN = {
+  kat: `<g fill="none" stroke="#444" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+    <polygon points="240,150 210,60 300,110"/>
+    <polygon points="460,150 490,60 400,110"/>
+    <circle cx="350" cy="230" r="130"/>
+    <circle cx="305" cy="205" r="14"/>
+    <circle cx="395" cy="205" r="14"/>
+    <polygon points="350,245 335,265 365,265"/>
+    <path d="M350 265 Q335 290 310 282 M350 265 Q365 290 390 282"/>
+    <path d="M240 240 L170 225 M240 262 L172 268 M460 240 L530 225 M460 262 L528 268"/>
+    <ellipse cx="350" cy="430" rx="105" ry="75"/>
+    <path d="M455 430 Q520 440 515 380 Q512 355 490 360"/>
+  </g>`,
+  raket: `<g fill="none" stroke="#444" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+    <polygon points="350,60 410,180 290,180"/>
+    <rect x="290" y="180" width="120" height="200" rx="14"/>
+    <circle cx="350" cy="250" r="40"/>
+    <polygon points="290,320 230,430 290,400"/>
+    <polygon points="410,320 470,430 410,400"/>
+    <path d="M320 380 L350 460 L380 380"/>
+    <circle cx="130" cy="120" r="40"/>
+    <circle cx="560" cy="330" r="30"/><ellipse cx="560" cy="330" rx="52" ry="10"/>
+  </g>`,
+  vis: `<g fill="none" stroke="#444" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="330" cy="250" rx="170" ry="105"/>
+    <polygon points="490,250 590,170 590,330"/>
+    <circle cx="255" cy="215" r="15"/>
+    <path d="M420 250 Q400 290 360 300"/>
+    <path d="M290 150 Q330 110 370 150"/>
+    <circle cx="120" cy="120" r="14"/><circle cx="90" cy="180" r="10"/><circle cx="130" cy="390" r="12"/>
+  </g>`,
+};
+const PALET = ["#ff4136", "#ff851b", "#ffd700", "#2ecc40", "#00b5ad", "#1e90ff", "#9b59b6", "#f012be", "#8b5a2b", "#111111", "#ffffff"];
+
+scenes.kleuren = function (app) {
+  const body = roomTop(app, "🎨 Kleuren maar!", "linear-gradient(#ff4136, #ffc2b8)");
+  const top = app.querySelector(".room-top");
+  const platenRow = document.createElement("div");
+  platenRow.className = "choice-row";
+  platenRow.innerHTML = `
+    <button class="level-btn" data-plaat="kat">😺</button>
+    <button class="level-btn" data-plaat="raket">🚀</button>
+    <button class="level-btn" data-plaat="vis">🐟</button>
+    <button class="level-btn" id="paint-clear">🧽 Nieuw vel</button>`;
+  top.appendChild(platenRow);
+
+  body.innerHTML = `
+    <div id="paint-wrap">
+      <div id="paint-tools"></div>
+      <div id="paint-board">
+        <canvas id="paint-canvas"></canvas>
+        <svg id="paint-outline" viewBox="0 0 700 500" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+    </div>`;
+
+  const canvas = $("#paint-canvas");
+  const board = $("#paint-board");
+  const g = canvas.getContext("2d");
+  let kleur = PALET[0];
+  let dikte = 18;
+  let strepen = 0;
+  let stickerGegeven = false;
+
+  function maten() {
+    canvas.width = board.clientWidth;
+    canvas.height = board.clientHeight;
+    g.fillStyle = "#fff";
+    g.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  maten();
+
+  const tools = $("#paint-tools");
+  PALET.forEach(k => {
+    const b = document.createElement("button");
+    b.className = "paint-color";
+    b.style.background = k;
+    b.addEventListener("click", () => {
+      sfx.klik();
+      kleur = k;
+      tools.querySelectorAll(".paint-color").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+    });
+    tools.appendChild(b);
+  });
+  tools.firstChild.classList.add("active");
+  [["🖌️", 10], ["🖍️", 22], ["🪣", 44]].forEach(([icoon, d]) => {
+    const b = document.createElement("button");
+    b.className = "icon-btn";
+    b.textContent = icoon;
+    b.addEventListener("click", () => { sfx.klik(); dikte = d; });
+    tools.appendChild(b);
+  });
+
+  function zetPlaat(naam) {
+    $("#paint-outline").innerHTML = KLEURPLATEN[naam];
+    platenRow.querySelectorAll("[data-plaat]").forEach(b => b.classList.toggle("active", b.dataset.plaat === naam));
+  }
+  zetPlaat("kat");
+
+  platenRow.querySelectorAll("[data-plaat]").forEach(b =>
+    b.addEventListener("click", () => { sfx.plop(); zetPlaat(b.dataset.plaat); })
+  );
+  $("#paint-clear").addEventListener("click", () => {
+    sfx.boing();
+    g.fillStyle = "#fff";
+    g.fillRect(0, 0, canvas.width, canvas.height);
+    speak(`Een lekker schoon vel, ${NAAM}!`);
+  });
+
+  let tekent = false, vx = 0, vy = 0;
+  function pos(e) {
+    const r = canvas.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  }
+  canvas.addEventListener("pointerdown", e => {
+    tekent = true;
+    canvas.setPointerCapture(e.pointerId);
+    [vx, vy] = pos(e);
+    g.fillStyle = kleur;
+    g.beginPath();
+    g.arc(vx, vy, dikte / 2, 0, Math.PI * 2);
+    g.fill();
+  });
+  canvas.addEventListener("pointermove", e => {
+    if (!tekent) return;
+    const [x, y] = pos(e);
+    g.strokeStyle = kleur;
+    g.lineWidth = dikte;
+    g.lineCap = "round";
+    g.beginPath();
+    g.moveTo(vx, vy);
+    g.lineTo(x, y);
+    g.stroke();
+    [vx, vy] = [x, y];
+  });
+  canvas.addEventListener("pointerup", () => {
+    if (!tekent) return;
+    tekent = false;
+    strepen++;
+    if (strepen === 15 && !stickerGegeven) {
+      stickerGegeven = true;
+      speak(`Wat een mooie tekening, ${NAAM}!`);
+      setTimeout(() => awardSticker(), 800);
+    }
+  });
+
+  speak(`${NAAM}, kies een kleur en maak de mooiste tekening!`);
+};
+
+/* ============================================================
+   VERKLEDEN
+   ============================================================ */
+const DRESS_OPTIES = {
+  pak:    ["#ff9f43", "#8ecae6", "#b5b5b5", "#c39b77"],
+  hoed:   ["geen", "helm", "piraat", "kroon", "pet"],
+  bril:   ["geen", "zonnebril", "duikbril"],
+  cape:   ["geen", "#ff4136", "#1e90ff", "#2ecc40", "#9b59b6"],
+  ding:   ["geen", "zwaard", "schild", "skateboard", "vlag"],
+};
+const DRESS_LABELS = {
+  hoed: { geen: "🚫", helm: "🪖 Helm", piraat: "🏴‍☠️ Piratenhoed", kroon: "👑 Kroon", pet: "🧢 Pet" },
+  bril: { geen: "🚫", zonnebril: "🕶️ Zonnebril", duikbril: "🤿 Duikbril" },
+  ding: { geen: "🚫", zwaard: "⚔️ Zwaard", schild: "🛡️ Schild", skateboard: "🛹 Skateboard", vlag: "🚩 Vlag" },
+};
+
+scenes.verkleden = function (app) {
+  const body = roomTop(app, "🦸 Verkleed de kat!", "linear-gradient(#00b5ad, #a8f0ec)");
+  const staat = { pak: 0, hoed: 0, bril: 0, cape: 0, ding: 0 };
+
+  body.innerHTML = `<div id="dress-wrap"><div id="dress-cat"></div><div id="dress-panel"></div></div>`;
+
+  function teken() {
+    const pak = DRESS_OPTIES.pak[staat.pak];
+    const hoed = DRESS_OPTIES.hoed[staat.hoed];
+    const bril = DRESS_OPTIES.bril[staat.bril];
+    const cape = DRESS_OPTIES.cape[staat.cape];
+    const ding = DRESS_OPTIES.ding[staat.ding];
+
+    let extra = "";
+    if (cape !== "geen") extra += `<path d="M62 118 Q30 150 38 205 L100 190 L162 205 Q170 150 138 118 Z" fill="${cape}" stroke="#333" stroke-width="3"/>`;
+    let lijf = `
+      <ellipse cx="100" cy="172" rx="46" ry="42" fill="${pak}" stroke="#333" stroke-width="3"/>
+      <ellipse cx="100" cy="180" rx="26" ry="24" fill="#fff" opacity=".7"/>
+      <path d="M146 172 Q185 178 180 140 Q178 128 166 132" fill="none" stroke="${pak}" stroke-width="10" stroke-linecap="round"/>
+      <ellipse cx="78" cy="208" rx="13" ry="9" fill="${pak}" stroke="#333" stroke-width="3"/>
+      <ellipse cx="122" cy="208" rx="13" ry="9" fill="${pak}" stroke="#333" stroke-width="3"/>`;
+    let kop = `
+      <polygon points="62,58 52,16 92,38" fill="${pak}" stroke="#333" stroke-width="3" stroke-linejoin="round"/>
+      <polygon points="138,58 148,16 108,38" fill="${pak}" stroke="#333" stroke-width="3" stroke-linejoin="round"/>
+      <polygon points="64,50 58,24 80,36" fill="#ffb3c1"/>
+      <polygon points="136,50 142,24 120,36" fill="#ffb3c1"/>
+      <circle cx="100" cy="80" r="46" fill="${pak}" stroke="#333" stroke-width="3"/>
+      <circle cx="83" cy="72" r="7" fill="#333"/><circle cx="117" cy="72" r="7" fill="#333"/>
+      <circle cx="85" cy="70" r="2.4" fill="#fff"/><circle cx="119" cy="70" r="2.4" fill="#fff"/>
+      <polygon points="100,84 93,92 107,92" fill="#ff6b81"/>
+      <path d="M100 92 Q93 102 84 99 M100 92 Q107 102 116 99" fill="none" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+      <path d="M60 80 L38 74 M60 88 L38 90 M140 80 L162 74 M140 88 L162 90" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>`;
+
+    if (bril === "zonnebril") kop += `<g><rect x="70" y="63" width="26" height="17" rx="6" fill="#222"/><rect x="104" y="63" width="26" height="17" rx="6" fill="#222"/><line x1="96" y1="70" x2="104" y2="70" stroke="#222" stroke-width="4"/></g>`;
+    if (bril === "duikbril") kop += `<g><ellipse cx="100" cy="72" rx="34" ry="16" fill="#aee6ff" opacity=".8" stroke="#1e90ff" stroke-width="5"/><line x1="66" y1="72" x2="54" y2="76" stroke="#1e90ff" stroke-width="5"/><line x1="134" y1="72" x2="146" y2="76" stroke="#1e90ff" stroke-width="5"/></g>`;
+
+    let hoedSVG = "";
+    if (hoed === "helm") hoedSVG = `<path d="M58 48 A42 34 0 0 1 142 48 L142 56 L58 56 Z" fill="#ff4136" stroke="#333" stroke-width="3"/><rect x="90" y="14" width="20" height="10" rx="5" fill="#ffd700" stroke="#333" stroke-width="2"/>`;
+    if (hoed === "piraat") hoedSVG = `<path d="M50 50 Q100 -14 150 50 Q100 34 50 50Z" fill="#222" stroke="#000" stroke-width="2"/><circle cx="100" cy="24" r="7" fill="#fff"/><path d="M94 30 L106 40 M106 30 L94 40" stroke="#fff" stroke-width="3"/>`;
+    if (hoed === "kroon") hoedSVG = `<polygon points="66,48 70,20 84,38 100,14 116,38 130,20 134,48" fill="#ffd700" stroke="#333" stroke-width="3" stroke-linejoin="round"/><circle cx="100" cy="14" r="5" fill="#ff4136"/>`;
+    if (hoed === "pet") hoedSVG = `<path d="M60 46 A40 30 0 0 1 140 46 Z" fill="#1e90ff" stroke="#333" stroke-width="3"/><path d="M132 42 Q166 40 164 52 L134 52Z" fill="#1e90ff" stroke="#333" stroke-width="3"/><circle cx="100" cy="24" r="5" fill="#ffd700"/>`;
+
+    let dingSVG = "";
+    if (ding === "zwaard") dingSVG = `<g transform="translate(28,120) rotate(-24)"><rect x="14" y="-52" width="10" height="58" rx="4" fill="#cfd8e3" stroke="#333" stroke-width="2"/><rect x="4" y="6" width="30" height="8" rx="4" fill="#ffd700" stroke="#333" stroke-width="2"/><rect x="14" y="14" width="10" height="16" rx="4" fill="#8b5a2b" stroke="#333" stroke-width="2"/></g>`;
+    if (ding === "schild") dingSVG = `<g transform="translate(18,138)"><path d="M20 0 Q40 8 60 0 Q60 40 40 54 Q20 40 20 0Z" fill="#1e90ff" stroke="#333" stroke-width="3"/><polygon points="40,12 45,26 60,26 48,35 52,49 40,40 28,49 32,35 20,26 35,26" fill="#ffd700"/></g>`;
+    if (ding === "skateboard") dingSVG = `<g transform="translate(48,212)"><rect x="0" y="0" width="104" height="12" rx="6" fill="#ff851b" stroke="#333" stroke-width="3"/><circle cx="24" cy="18" r="8" fill="#333"/><circle cx="80" cy="18" r="8" fill="#333"/></g>`;
+    if (ding === "vlag") dingSVG = `<g transform="translate(150,86)"><line x1="0" y1="0" x2="0" y2="96" stroke="#8b5a2b" stroke-width="5"/><path d="M0 4 L44 14 L0 28Z" fill="#ff4136" stroke="#333" stroke-width="2"/></g>`;
+
+    $("#dress-cat").innerHTML = `<svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" id="dress-svg">
+      ${extra}${lijf}${kop}${hoedSVG}${dingSVG}
+    </svg>`;
+    $("#dress-svg").addEventListener("click", () => {
+      sfx.miauw();
+      $("#dress-cat").classList.remove("wiggle");
+      void $("#dress-cat").offsetWidth;
+      $("#dress-cat").classList.add("wiggle");
+      speak(pick(["Miauw! Wat zie ik er stoer uit!", "Prrrr, mooi hè?", `Miauw! Dankjewel, ${NAAM}!`]));
+    });
+  }
+
+  const panel = $("#dress-panel");
+  const knoppen = [
+    ["pak", "🎨 Kleur"],
+    ["hoed", "🎩 Hoed"],
+    ["bril", "🕶️ Bril"],
+    ["cape", "🦸 Cape"],
+    ["ding", "⚔️ Erbij"],
+  ];
+  for (const [sleutel, label] of knoppen) {
+    const b = document.createElement("button");
+    b.className = "dress-btn";
+    b.textContent = label;
+    b.addEventListener("click", () => {
+      sfx.plop();
+      staat[sleutel] = (staat[sleutel] + 1) % DRESS_OPTIES[sleutel].length;
+      teken();
+      const labels = DRESS_LABELS[sleutel];
+      const waarde = DRESS_OPTIES[sleutel][staat[sleutel]];
+      if (labels && labels[waarde] && waarde !== "geen") speak(labels[waarde].replace(/^\S+\s/, ""));
+    });
+    panel.appendChild(b);
+  }
+  const hussel = document.createElement("button");
+  hussel.className = "dress-btn";
+  hussel.style.background = "var(--geel)";
+  hussel.textContent = "🎲 Husselen!";
+  hussel.addEventListener("click", () => {
+    sfx.boing();
+    for (const k of Object.keys(staat)) staat[k] = randInt(0, DRESS_OPTIES[k].length - 1);
+    teken();
+    speak(pick(["Tada! Wat een gekke kat!", "Hihi, kijk nou!", `Wauw ${NAAM}, wat een stoere kat!`]));
+  });
+  panel.appendChild(hussel);
+
+  teken();
+  speak(`${NAAM}, klik op de knopjes en verkleed de kat zo stoer als je wilt!`);
+};
+
+/* ============================================================
+   SPEELKAMER (busy board, Pok Pok-stijl)
+   ============================================================ */
+scenes.speel = function (app) {
+  const body = roomTop(app, "🎪 Speelkamer: druk maar overal op!", "linear-gradient(#f012be, #ffb8ec)");
+  body.innerHTML = `<div id="busy-grid"></div>`;
+  const grid = $("#busy-grid");
+  const noten = [262, 330, 392, 523];
+
+  function cel(inhoud) {
+    const c = document.createElement("div");
+    c.className = "busy-cell";
+    c.appendChild(inhoud);
+    grid.appendChild(c);
+    return c;
+  }
+
+  [["#ff4136", 0], ["#ffd700", 1], ["#2ecc40", 2], ["#1e90ff", 3]].forEach(([kl, i]) => {
+    const b = document.createElement("button");
+    b.className = "busy-btn";
+    b.style.background = kl;
+    b.addEventListener("pointerdown", () => {
+      tone(noten[i], 0.35, { type: "triangle", vol: 0.3 });
+      b.parentElement.style.background = kl + "44";
+      setTimeout(() => (b.parentElement.style.background = ""), 300);
+    });
+    cel(b);
+  });
+
+  const lampen = [];
+  for (let i = 0; i < 2; i++) {
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "display:flex;gap:1vmin;align-items:center;justify-content:center;width:100%";
+    const sw = document.createElement("button");
+    sw.className = "switch";
+    const lamp = document.createElement("span");
+    lamp.className = "lamp";
+    lamp.textContent = "💡";
+    sw.addEventListener("click", () => {
+      sw.classList.toggle("on");
+      lamp.classList.toggle("on", sw.classList.contains("on"));
+      sfx.klik();
+      tone(sw.classList.contains("on") ? 700 : 400, 0.12, { type: "square", vol: 0.1 });
+    });
+    wrap.append(sw, lamp);
+    cel(wrap);
+    lampen.push(lamp);
+  }
+
+  const sliderWrap = document.createElement("div");
+  sliderWrap.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:1vmin;width:100%";
+  sliderWrap.innerHTML = `<span style="font-size:.7em">🎚️</span>`;
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.className = "busy-slider";
+  slider.min = 200; slider.max = 1000; slider.value = 500;
+  slider.addEventListener("input", () => tone(+slider.value, 0.08, { type: "sine", vol: 0.12 }));
+  sliderWrap.appendChild(slider);
+  cel(sliderWrap);
+
+  const toeter = document.createElement("button");
+  toeter.className = "busy-btn";
+  toeter.style.background = "#ff851b";
+  toeter.textContent = "📯";
+  toeter.addEventListener("click", () => { sfx.toeter(); toeter.classList.remove("wiggle"); void toeter.offsetWidth; toeter.classList.add("wiggle"); });
+  cel(toeter);
+
+  const trommel = document.createElement("button");
+  trommel.className = "busy-btn";
+  trommel.style.background = "#c39b77";
+  trommel.textContent = "🥁";
+  trommel.addEventListener("pointerdown", () => sfx.trommel());
+  cel(trommel);
+
+  const disco = document.createElement("button");
+  disco.className = "busy-btn";
+  disco.style.background = "#9b59b6";
+  disco.textContent = "🪩";
+  disco.addEventListener("click", () => {
+    document.body.classList.remove("disco");
+    void document.body.offsetWidth;
+    document.body.classList.add("disco");
+    [523, 659, 784, 659, 523, 784].forEach((f, i) => tone(f, 0.15, { delay: i * 0.15, type: "square", vol: 0.12 }));
+    confetti(15);
+  });
+  cel(disco);
+
+  const VERRASSINGEN = [
+    () => { flyAcross("🚀"); tone(200, 0.6, { glide: 900, type: "sawtooth", vol: 0.15 }); },
+    () => { flyAcross("🐉"); sfx.boing(); },
+    () => { flyAcross("🦋"); tone(800, 0.3, { glide: 1200, vol: 0.12 }); },
+    () => { flyAcross("😺"); sfx.miauw(); },
+    () => { flyAcross("🛸"); tone(600, 0.7, { glide: 300, type: "sine", vol: 0.15 }); },
+    () => { floatUp("🎈"); sfx.plop(); },
+    () => { floatUp("⚽"); sfx.boing(); },
+    () => { confetti(20); sfx.fanfare(); },
+    () => { floatUp("🐸"); tone(300, 0.15, { glide: 600, type: "square", vol: 0.15 }); speak("Kwaak!"); },
+  ];
+  for (let i = 0; i < 3; i++) {
+    const doos = document.createElement("button");
+    doos.className = "busy-btn";
+    doos.style.background = ["#ffd700", "#2ecc40", "#1e90ff"][i];
+    doos.textContent = "🎁";
+    doos.addEventListener("click", () => {
+      doos.classList.remove("wiggle");
+      void doos.offsetWidth;
+      doos.classList.add("wiggle");
+      sfx.plop();
+      pick(VERRASSINGEN)();
+    });
+    cel(doos);
+  }
+
+  speak(`${NAAM}, dit is jouw speelkamer! Druk maar op alle knopjes en kijk wat er gebeurt!`);
+};
+
+/* ============================================================
+   STICKERBOEK
+   ============================================================ */
+scenes.stickers = function (app) {
+  const body = roomTop(app, `⭐ Stickerboek van ${NAAM}`, "linear-gradient(#ffb700, #ffe9a8)");
+  body.innerHTML = `<div id="book-wrap"><div id="sticker-shelf"></div><div id="book-page"></div></div>`;
+  const shelf = $("#sticker-shelf");
+  const page = $("#book-page");
+  const s = stickerState();
+
+  function bewaar() {
+    saveStickerState(s);
+  }
+
+  function maakSticker(i) {
+    const el = document.createElement("div");
+    el.className = "sticker";
+    el.textContent = STICKER_POOL[i];
+    el.dataset.i = i;
+    const p = s.pos[i];
+    if (p) {
+      el.style.position = "absolute";
+      el.style.left = p.x * 100 + "%";
+      el.style.top = p.y * 100 + "%";
+      page.appendChild(el);
+    } else {
+      shelf.appendChild(el);
+    }
+    maakSleepbaar(el, {
+      onStart() {
+        const r = el.getBoundingClientRect();
+        const pr = page.getBoundingClientRect();
+        el.style.position = "absolute";
+        el.style.left = r.left - pr.left + "px";
+        el.style.top = r.top - pr.top + "px";
+        if (el.parentElement !== page) page.appendChild(el);
+      },
+      onDrop() {
+        const pr = page.getBoundingClientRect();
+        const m = midden(el);
+        const er = el.getBoundingClientRect();
+        if (m.x < pr.left || m.x > pr.right || m.y < pr.top || m.y > pr.bottom) {
+          delete s.pos[el.dataset.i];
+          el.style.position = "";
+          el.style.left = "";
+          el.style.top = "";
+          shelf.appendChild(el);
+          sfx.klik();
+        } else {
+          const x = Math.min(Math.max(er.left - pr.left, 0), pr.width - er.width) / pr.width;
+          const y = Math.min(Math.max(er.top - pr.top, 0), pr.height - er.height) / pr.height;
+          el.style.left = x * 100 + "%";
+          el.style.top = y * 100 + "%";
+          s.pos[el.dataset.i] = { x, y };
+          sfx.plop();
+        }
+        bewaar();
+      },
+    });
+  }
+
+  for (let i = 0; i < STICKER_POOL.length; i++) {
+    if (i < s.earned) {
+      maakSticker(i);
+    } else {
+      const slot = document.createElement("div");
+      slot.className = "sticker-locked";
+      slot.textContent = "❓";
+      shelf.appendChild(slot);
+    }
+  }
+
+  if (s.earned === 0) {
+    speak(`${NAAM}, je hebt nog geen stickers. Speel de spelletjes om stickers te verdienen!`);
+  } else {
+    speak(`${NAAM}, dit zijn jouw stickers! Sleep ze waar jij wilt.`);
+  }
+};
+
+/* ============================================================
+   Start
+   ============================================================ */
+function updateSoundBtn() {
+  $("#sound-btn").textContent = soundOn ? "🔊" : "🔇";
+}
+$("#sound-btn").addEventListener("click", () => {
+  soundOn = !soundOn;
+  localStorage.setItem("kh_sound", soundOn ? "aan" : "uit");
+  updateSoundBtn();
+  if (soundOn) { sfx.goed(); speak("Geluid staat weer aan!"); }
+  else if ("speechSynthesis" in window) speechSynthesis.cancel();
+});
+updateSoundBtn();
+
+$("#start-cat").innerHTML = catSVG("#ff9f43");
+$("#start-btn").addEventListener("click", () => {
+  ctx();
+  sfx.fanfare();
+  $("#start-overlay").style.display = "none";
+  gaNaar("hub");
+  confetti(24);
+  setTimeout(() => speak(`Hoi ${NAAM}! Welkom in jouw kattenhuis! Kies maar een kamer om te spelen!`), 400);
+});
+</script>
+</body>
+</html>
