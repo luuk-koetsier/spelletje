@@ -1,4 +1,4 @@
-# 🏠 Het Kattenhuis van Sep
+# 🏠 Het Huis van Sep
 
 Een vrolijk, kleurrijk browserspel voor Sep (5, bijna 6 jaar) — geïnspireerd op
 Gabby's Dollhouse en Pok Pok. Puzzeltjes, simpele opdrachtjes en heel veel om
@@ -7,9 +7,15 @@ is niet nodig.
 
 ## Zo speel je
 
-Open `index.html` in een browser (dubbelklikken is genoeg — Chrome of Edge
-werkt het best voor de voorleesstem). Klik op **▶ Spelen!** en kies een kamer.
-Werkt met de muis én met touch, en helemaal offline.
+Open `index.html` via een webserver (of gewoon op Vercel). Het huis verschijnt
+als een echt **3D-poppenhuis**: sleep met de muis of vinger om het rond te
+draaien, en klik op een kamer om het spelletje te openen. Werkt met muis én
+touch.
+
+Het huis is gebouwd met Three.js (WebGL). De Three.js-bibliotheek staat lokaal
+mee in `vendor/three/`, dus het spel heeft geen CDN nodig. Omdat het spel
+ES-modules gebruikt, moet het via `http(s)` geladen worden (een webserver of
+Vercel), niet met een dubbelklik op het bestand.
 
 ## De kamers
 
