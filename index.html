@@ -3322,13 +3322,13 @@ const canvas=document.getElementById('scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
 renderer.setPixelRatio(Math.min(2,devicePixelRatio));
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.VSMShadowMap;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.82;
 
 const scene=new THREE.Scene();
 scene.fog=new THREE.Fog(0xCDEBF3,30,68);
 {const pmrem=new THREE.PMREMGenerator(renderer);
  scene.environment=pmrem.fromScene(new RoomEnvironment(),0.04).texture;
- scene.environmentIntensity=0.5;}
+ scene.environmentIntensity=0.4;}
 (()=>{const cv=document.createElement('canvas');cv.width=8;cv.height=256;const c=cv.getContext('2d');
 const g=c.createLinearGradient(0,0,0,256);g.addColorStop(0,'#7FCBEA');g.addColorStop(.55,COL.sky1);g.addColorStop(1,COL.sky2);
 c.fillStyle=g;c.fillRect(0,0,8,256);const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;scene.background=t;})();
@@ -3344,15 +3344,15 @@ controls.minDistance=8;controls.maxDistance=26;
 controls.minPolarAngle=0.25;controls.maxPolarAngle=Math.PI*0.52;
 controls.target.copy(TARGET);controls.autoRotate=false;controls.autoRotateSpeed=0.5;
 
-scene.add(new THREE.HemisphereLight(0xDCEEFF,0xCFE0A8,0.5));
-scene.add(new THREE.AmbientLight(0xffffff,0.08));
-const key=new THREE.DirectionalLight(0xFFE8C4,1.85);
+scene.add(new THREE.HemisphereLight(0xDCEEFF,0xCFE0A8,0.42));
+scene.add(new THREE.AmbientLight(0xffffff,0.06));
+const key=new THREE.DirectionalLight(0xFFE8C4,1.45);
 key.position.set(9,13,7.5);key.castShadow=true;
 key.shadow.mapSize.set(4096,4096);key.shadow.radius=11;key.shadow.blurSamples=25;key.shadow.bias=-0.00035;key.shadow.normalBias=0.02;
 const scq=key.shadow.camera;scq.near=1;scq.far=48;scq.left=-15;scq.right=15;scq.top=17;scq.bottom=-7;
 scene.add(key);scene.add(key.target);key.target.position.set(0,3,0);
 const fill=new THREE.DirectionalLight(0xC2DAFF,0.4);fill.position.set(-10,7,-2);scene.add(fill);
-const rim=new THREE.DirectionalLight(0xFFD79A,0.85);rim.position.set(-7,8,-12);scene.add(rim);
+const rim=new THREE.DirectionalLight(0xFFD79A,0.6);rim.position.set(-7,8,-12);scene.add(rim);
 const bounce=new THREE.DirectionalLight(0xBFE59A,0.14);bounce.position.set(0,-4,6);scene.add(bounce);
 const sunSpot=new THREE.SpotLight(0xFFF0D0,0.22,60,0.6,0.7,0.8);sunSpot.position.set(12,20,14);sunSpot.target.position.set(0,4,0);scene.add(sunSpot);scene.add(sunSpot.target);
 
@@ -4136,7 +4136,7 @@ composer=(()=>{
   sao.params.saoBias=0.4;sao.params.saoIntensity=0.032;sao.params.saoScale=9;
   sao.params.saoKernelRadius=46;sao.params.saoBlur=true;sao.params.saoBlurRadius=8;sao.params.saoBlurStdDev=6;
   cmp.addPass(sao);
-  const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.16,0.7,0.92);
+  const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.08,0.7,0.95);
   cmp.addPass(bloom);
   const Grade={
    uniforms:{tDiffuse:{value:null},uSat:{value:1.14},uCon:{value:1.06},uWarm:{value:0.028},uVig:{value:0.34},uTime:{value:0}},
