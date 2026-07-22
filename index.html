@@ -3887,6 +3887,42 @@ balloon(-7.5,4.5,3,COL.coral);balloon(-8.2,5.6,2,COL.yellow);balloon(7.8,4.8,3.2
   const SP=(r,col,o)=>new THREE.Mesh(new THREE.SphereGeometry(r,14,12),M(col,o||{r:0.6}));
   const CO=(r,h,col,o)=>new THREE.Mesh(new THREE.ConeGeometry(r,h,16),M(col,o||{r:0.6}));
   const at=(g,m,x,y,z,ry)=>{m.position.set(x,fy+y,z);if(ry)m.rotation.y=ry;m.castShadow=true;m.receiveShadow=true;g.add(m);return m;};
+  // ── wanddecoratie: geschilderde mini-schilderijtjes (canvas-textuur) ──
+  const wallZ=-RD/2+T*0.7+0.02;
+  function star2(c,cx,cy,R){c.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rad=i%2?R*0.45:R;c.lineTo(cx+Math.cos(a)*rad,cy+Math.sin(a)*rad);}c.closePath();c.fill();}
+  function artTex(kind,bg){
+    const S=128,cv=document.createElement('canvas');cv.width=cv.height=S;const c=cv.getContext('2d');
+    c.fillStyle=bg;c.fillRect(0,0,S,S);c.lineCap='round';c.lineJoin='round';
+    if(kind==='cat'){c.fillStyle=COL.orange;c.beginPath();c.arc(64,74,32,0,7);c.fill();
+      c.beginPath();c.moveTo(40,54);c.lineTo(32,26);c.lineTo(58,48);c.fill();c.beginPath();c.moveTo(88,54);c.lineTo(96,26);c.lineTo(70,48);c.fill();
+      c.fillStyle='#2A2320';c.beginPath();c.arc(53,70,5,0,7);c.fill();c.beginPath();c.arc(75,70,5,0,7);c.fill();c.fillStyle=COL.pink;c.beginPath();c.arc(64,82,4,0,7);c.fill();}
+    else if(kind==='landscape'){c.fillStyle=COL.yellow;c.beginPath();c.arc(98,32,15,0,7);c.fill();
+      c.fillStyle=shade(COL.green,-0.08);c.beginPath();c.moveTo(0,128);c.quadraticCurveTo(50,86,128,128);c.fill();
+      c.fillStyle=COL.green;c.beginPath();c.moveTo(0,128);c.quadraticCurveTo(80,100,128,128);c.fill();}
+    else if(kind==='flower'){c.strokeStyle=COL.green;c.lineWidth=6;c.beginPath();c.moveTo(64,122);c.lineTo(64,64);c.stroke();
+      c.fillStyle=COL.coral;for(let i=0;i<6;i++){const a=i/6*Math.PI*2;c.beginPath();c.ellipse(64+Math.cos(a)*20,54+Math.sin(a)*20,11,11,0,0,7);c.fill();}
+      c.fillStyle=COL.yellow;c.beginPath();c.arc(64,54,12,0,7);c.fill();}
+    else if(kind==='rainbow'){[COL.coral,COL.orange,COL.yellow,COL.green,COL.blue].forEach((rc,i)=>{c.strokeStyle=rc;c.lineWidth=8;c.beginPath();c.arc(64,112,18+i*10,Math.PI,0);c.stroke();});}
+    else if(kind==='heart'){c.fillStyle=COL.pink;c.beginPath();c.moveTo(64,104);c.bezierCurveTo(6,62,30,18,64,50);c.bezierCurveTo(98,18,122,62,64,104);c.fill();}
+    else if(kind==='stars'){c.fillStyle=COL.yellow;star2(c,44,46,16);star2(c,88,64,12);star2(c,60,92,10);}
+    else if(kind==='balloon'){[[46,COL.coral],[82,COL.blue]].forEach(([x,col])=>{c.fillStyle=col;c.beginPath();c.ellipse(x,50,17,21,0,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=2;c.beginPath();c.moveTo(x,71);c.lineTo(64,120);c.stroke();});}
+    else {const cols=[COL.coral,COL.blue,COL.green,COL.yellow,COL.purple];for(let i=0;i<8;i++){c.fillStyle=cols[i%5];c.beginPath();c.arc(22+((i*37)%84),24+((i*53)%80),9+(i%3)*4,0,7);c.fill();}}
+    const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t;
+  }
+  function painting(g,x,yf,w,h,kind,bg){
+    at(g,RB(w+0.07,h+0.07,0.025,0.015,'#fff'),x,yf,wallZ);
+    const art=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:artTex(kind,bg),roughness:0.85}));
+    art.position.set(x,fy+yf,wallZ+0.016);g.add(art);
+  }
+  function plant(g,x,z){
+    at(g,CY(0.1,0.13,0.16,COL.coral),x,0.08,z);
+    at(g,SP(0.16,COL.green),x,0.26,z);at(g,SP(0.1,shade(COL.green,0.12)),x-0.08,0.32,z);at(g,SP(0.1,shade(COL.green,-0.06)),x+0.09,0.3,z);
+  }
+  function stool(g,x,z,col){
+    for(const [sx,sz] of [[-0.06,-0.06],[0.06,-0.06],[-0.06,0.06],[0.06,0.06]]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.014,0.014,0.16,6),M(COL.wood));leg.position.set(x+sx,fy+0.08,z+sz);leg.castShadow=true;g.add(leg);}
+    at(g,CY(0.12,0.12,0.04,col),x,0.18,z);
+  }
+  const ART={Memory:['cat','stars'],Puzzel:['abstract','balloon'],Vormen:['abstract','rainbow'],Tellen:['landscape','stars'],Kleuren:['rainbow','flower'],Verkleden:['heart','stars'],Speelkamer:['balloon','cat'],Stickers:['stars','rainbow']};
   const B={
     Memory(g){ // speelkaart-tafeltje + dobbelsteen
       at(g,CY(0.055,0.07,0.26,COL.wood),-0.58,0.13,-0.42);
@@ -3951,7 +3987,14 @@ balloon(-7.5,4.5,3,COL.coral);balloon(-8.2,5.6,2,COL.yellow);balloon(7.8,4.8,3.2
       for(const [dx,c] of [[0.06,COL.coral],[0.2,COL.blue],[0.33,COL.green]]){const st=new THREE.Mesh(new THREE.OctahedronGeometry(0.05),M(c));st.position.set(dx,fy+0.63,-0.5);st.castShadow=true;g.add(st);}
     },
   };
-  for(const r of roomObjs){const b=B[r.room.name];if(b)b(r.group);}
+  for(const r of roomObjs){
+    const b=B[r.room.name];if(b)b(r.group);
+    const [m1,m2]=ART[r.room.name]||['abstract','stars'];
+    painting(r.group,-0.72,1.12,0.34,0.28,m1,shade(r.room.color,0.32));
+    painting(r.group,0.72,1.0,0.32,0.26,m2,'#FFF7EE');
+    plant(r.group,0.82,0.5);
+    stool(r.group,-0.82,0.5,shade(r.room.color,0.1));
+  }
 })();
 (()=>{const mb=new THREE.Group();
   const post=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.08,1.0,8),M(COL.woodD,{r:0.9}));post.position.y=0.5;post.castShadow=true;mb.add(post);
