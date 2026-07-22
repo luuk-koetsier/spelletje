@@ -3879,6 +3879,80 @@ balloon(-7.5,4.5,3,COL.coral);balloon(-8.2,5.6,2,COL.yellow);balloon(7.8,4.8,3.2
     ball.position.set(-COLW*0.28,-FH/2+T*0.6+0.13,RD*0.2);ball.castShadow=true;r.group.add(ball);
   }
 })();
+// ─────────── ingerichte kamers: een eigen thema met spulletjes per kamer
+(()=>{
+  const fy=-FH/2+T*0.6+0.02;                       // vloerhoogte binnen een kamer
+  const RB=(w,h,d,rad,col,o)=>new THREE.Mesh(new RoundedBoxGeometry(w,h,d,3,rad),M(col,o||{r:0.6}));
+  const CY=(rt,rb,h,col,o)=>new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,16),M(col,o||{r:0.6}));
+  const SP=(r,col,o)=>new THREE.Mesh(new THREE.SphereGeometry(r,14,12),M(col,o||{r:0.6}));
+  const CO=(r,h,col,o)=>new THREE.Mesh(new THREE.ConeGeometry(r,h,16),M(col,o||{r:0.6}));
+  const at=(g,m,x,y,z,ry)=>{m.position.set(x,fy+y,z);if(ry)m.rotation.y=ry;m.castShadow=true;m.receiveShadow=true;g.add(m);return m;};
+  const B={
+    Memory(g){ // speelkaart-tafeltje + dobbelsteen
+      at(g,CY(0.055,0.07,0.26,COL.wood),-0.58,0.13,-0.42);
+      at(g,CY(0.26,0.26,0.05,shade(COL.teal,0.14)),-0.58,0.28,-0.42);
+      at(g,RB(0.16,0.02,0.22,0.02,'#fff',{r:0.4}),-0.66,0.31,-0.42,0.3);
+      at(g,RB(0.16,0.02,0.22,0.02,'#fff',{r:0.4}),-0.5,0.31,-0.4,-0.25);
+      const die=at(g,RB(0.13,0.13,0.13,0.03,'#fff',{r:0.4}),-0.28,0.31,-0.3,0.4);
+      for(const [dx,dz] of [[0,0],[-0.035,-0.035],[0.035,0.035]]){const pip=SP(0.014,COL.tealD);pip.position.set(die.position.x+dx,die.position.y+0.066,-0.24+dz);g.add(pip);}
+    },
+    Puzzel(g){ // speelgoedkist met blokken
+      at(g,RB(0.5,0.32,0.34,0.05,COL.woodD,{r:0.7}),-0.5,0.16,-0.4);
+      const lid=at(g,RB(0.52,0.06,0.36,0.04,shade(COL.woodD,0.12)),-0.5,0.34,-0.55);lid.rotation.x=-0.7;
+      [COL.coral,COL.blue,COL.green,COL.yellow].forEach((c,i)=>{const b=at(g,RB(0.13,0.13,0.13,0.03,c),-0.64+i*0.09,0.39+(i%2)*0.03,-0.32,0.3+i*0.2);});
+    },
+    Vormen(g){ // vormen-sorteerkubus + losse vorm
+      at(g,RB(0.42,0.34,0.34,0.05,shade(COL.coral,0.16)),-0.5,0.17,-0.4);
+      const circ=new THREE.Mesh(new THREE.CircleGeometry(0.06,18),M(COL.yellow,{r:0.5}));circ.position.set(-0.63,fy+0.2,-0.223);g.add(circ);
+      const tri=new THREE.Mesh(new THREE.CircleGeometry(0.075,3),M(COL.blue,{r:0.5}));tri.position.set(-0.5,fy+0.2,-0.223);g.add(tri);
+      const sq=new THREE.Mesh(new THREE.PlaneGeometry(0.1,0.1),M(COL.green,{r:0.5}));sq.position.set(-0.37,fy+0.2,-0.223);g.add(sq);
+      const star=at(g,CO(0.09,0.14,COL.purple),-0.5,0.42,-0.4);star.rotation.set(0.25,0,0.1);
+      at(g,RB(0.12,0.12,0.12,0.02,COL.pink),-0.24,0.06,-0.3,0.5);
+    },
+    Tellen(g){ // telraam met kraaltjes
+      at(g,RB(0.52,0.4,0.07,0.04,COL.wood),-0.44,0.24,-0.42);
+      const bcols=[COL.coral,COL.yellow,COL.green,COL.blue,COL.purple];
+      for(let row=0;row<3;row++){const ry=0.12+row*0.12;
+        const rod=new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.44,6),M('#fff',{m:0.3,r:0.4}));rod.rotation.z=Math.PI/2;rod.position.set(-0.44,fy+ry,-0.38);g.add(rod);
+        for(let bd=0;bd<5;bd++){const bead=SP(0.035,bcols[(bd+row)%5]);bead.position.set(-0.62+bd*0.09,fy+ry,-0.38);bead.castShadow=true;g.add(bead);}}
+    },
+    Kleuren(g){ // schildersezel + verfpotje
+      for(const s of [-1,1]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.5,8),M(COL.wood));leg.position.set(-0.5+s*0.13,fy+0.25,-0.4);leg.rotation.z=s*0.14;leg.castShadow=true;g.add(leg);}
+      const back=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.5,8),M(COL.wood));back.position.set(-0.5,fy+0.25,-0.47);back.rotation.x=0.24;g.add(back);
+      at(g,RB(0.3,0.26,0.03,0.01,'#fff',{r:0.5}),-0.5,0.34,-0.36);
+      const blob=new THREE.Mesh(new THREE.CircleGeometry(0.06,14),M(COL.pink,{r:0.5}));blob.position.set(-0.52,fy+0.36,-0.343);g.add(blob);
+      const blob2=new THREE.Mesh(new THREE.CircleGeometry(0.04,14),M(COL.blue,{r:0.5}));blob2.position.set(-0.44,fy+0.3,-0.343);g.add(blob2);
+      at(g,CY(0.05,0.06,0.1,COL.green),-0.24,0.05,-0.32);
+    },
+    Verkleden(g){ // kledingrek met hangertjes + hoge hoed
+      for(const s of [-1,1]){const post=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.5,8),M('#fff'));post.position.set(-0.5+s*0.24,fy+0.25,-0.42);post.castShadow=true;g.add(post);}
+      const bar=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.52,8),M(COL.yellow,{m:0.3,r:0.4}));bar.rotation.z=Math.PI/2;bar.position.set(-0.5,fy+0.5,-0.42);g.add(bar);
+      for(const [dx,c] of [[-0.13,COL.coral],[0.11,COL.blue]]){
+        const hook=new THREE.Mesh(new THREE.TorusGeometry(0.028,0.006,6,12,Math.PI),M('#ccc',{m:0.4,r:0.3}));hook.position.set(-0.5+dx,fy+0.5,-0.42);g.add(hook);
+        at(g,RB(0.16,0.22,0.05,0.03,c),-0.5+dx,0.36,-0.42);}
+      at(g,CY(0.14,0.14,0.03,'#26241f'),-0.16,0.02,-0.3);
+      at(g,CY(0.093,0.093,0.04,COL.pink),-0.16,0.06,-0.3);
+      at(g,CY(0.09,0.09,0.17,'#26241f'),-0.16,0.14,-0.3);
+    },
+    Speelkamer(g){ // trommel met stokjes + tol
+      at(g,CY(0.2,0.2,0.24,COL.coral),-0.5,0.14,-0.4);
+      for(const yy of [0.02,0.26]){const rim=new THREE.Mesh(new THREE.TorusGeometry(0.2,0.02,8,22),M('#fff'));rim.rotation.x=Math.PI/2;rim.position.set(-0.5,fy+yy,-0.4);g.add(rim);}
+      for(const [dx,rz] of [[-0.06,0.5],[0.06,-0.5]]){const stick=new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,0.3,6),M(COL.wood));stick.position.set(-0.5+dx,fy+0.36,-0.32);stick.rotation.z=rz;stick.castShadow=true;g.add(stick);const knob=SP(0.03,COL.wood);knob.position.set(-0.5+dx*2.6,fy+0.49,-0.32);g.add(knob);}
+      const top=at(g,CO(0.1,0.17,COL.blue),-0.2,0.11,-0.3);top.rotation.x=Math.PI;
+      at(g,CY(0.014,0.014,0.06,COL.yellow),-0.2,0.21,-0.3);
+    },
+    Stickers(g){ // wandplank met trofee + sterren
+      at(g,RB(0.72,0.04,0.16,0.02,'#fff'),0,0.56,-0.5);
+      for(const s of [-1,1]){const br=at(g,RB(0.03,0.12,0.12,0.01,'#fff'),s*0.3,0.5,-0.52);}
+      at(g,CY(0.07,0.09,0.05,COL.yellow,{m:0.5,r:0.25}),-0.26,0.62,-0.5);
+      at(g,CY(0.02,0.02,0.06,COL.yellow,{m:0.5,r:0.25}),-0.26,0.67,-0.5);
+      at(g,CY(0.11,0.06,0.11,COL.yellow,{m:0.5,r:0.25}),-0.26,0.75,-0.5);
+      for(const s of [-1,1]){const h=new THREE.Mesh(new THREE.TorusGeometry(0.045,0.012,6,12),M(COL.yellow,{m:0.5,r:0.25}));h.position.set(-0.26+s*0.12,fy+0.75,-0.5);h.rotation.y=Math.PI/2;g.add(h);}
+      for(const [dx,c] of [[0.06,COL.coral],[0.2,COL.blue],[0.33,COL.green]]){const st=new THREE.Mesh(new THREE.OctahedronGeometry(0.05),M(c));st.position.set(dx,fy+0.63,-0.5);st.castShadow=true;g.add(st);}
+    },
+  };
+  for(const r of roomObjs){const b=B[r.room.name];if(b)b(r.group);}
+})();
 (()=>{const mb=new THREE.Group();
   const post=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.08,1.0,8),M(COL.woodD,{r:0.9}));post.position.y=0.5;post.castShadow=true;mb.add(post);
   const box=new THREE.Mesh(new RoundedBoxGeometry(0.42,0.34,0.62,3,0.1),M(COL.blue,{r:0.6}));box.position.y=1.12;box.castShadow=true;mb.add(box);
