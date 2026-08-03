@@ -3206,6 +3206,212 @@ scenes.stickers = function (app) {
 };
 
 /* ============================================================
+   WATER POMPEN — water overhevelen van laag naar hoog
+   ============================================================ */
+scenes.water = function (app) {
+  const body = roomTop(app, "💧 Water pompen: van laag naar hoog!", "linear-gradient(#8fd8f2, #cbeffb 58%, #dff6e6)");
+  zwevers(body, ["💧", "🫧", "☁️"], 4);
+
+  const MAX = 8;              // zoveel keer pompen tot de ton vol is
+  const P = [[150, 120], [150, 52], [258, 52], [258, 74]]; // route van pomp naar ton
+  const segLen = [];
+  let totLen = 0;
+  for (let i = 0; i < P.length - 1; i++) {
+    const d = Math.hypot(P[i + 1][0] - P[i][0], P[i + 1][1] - P[i][1]);
+    segLen.push(d); totLen += d;
+  }
+  function ptAt(u) {                        // punt langs de route (u: 0..1)
+    let d = Math.max(0, Math.min(1, u)) * totLen;
+    for (let i = 0; i < segLen.length; i++) {
+      if (d <= segLen[i] || i === segLen.length - 1) {
+        const f = segLen[i] ? d / segLen[i] : 0;
+        return { x: P[i][0] + (P[i + 1][0] - P[i][0]) * f, y: P[i][1] + (P[i + 1][1] - P[i][1]) * f };
+      }
+      d -= segLen[i];
+    }
+    return { x: P[P.length - 1][0], y: P[P.length - 1][1] };
+  }
+
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "position:absolute; inset:0; display:flex; align-items:center; justify-content:center;";
+  wrap.innerHTML = `
+  <svg viewBox="0 0 320 220" preserveAspectRatio="xMidYMid meet"
+       style="width:97%; height:97%; max-width:158vmin; touch-action:manipulation;">
+    <defs>
+      <linearGradient id="wg-grass" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8FD46A"/><stop offset="1" stop-color="#5FAe45"/>
+      </linearGradient>
+      <clipPath id="wg-tank"><rect x="224" y="72" width="72" height="80" rx="11"/></clipPath>
+      <clipPath id="wg-pond"><rect x="30" y="150" width="88" height="40" rx="11"/></clipPath>
+    </defs>
+
+    <!-- heuvel: links laag, rechts hoog -->
+    <path d="M0,186 L118,186 Q168,184 210,166 L320,150 L320,220 L0,220 Z" fill="url(#wg-grass)"/>
+    <path d="M0,186 L118,186 Q168,184 210,166 L320,150" fill="none" stroke="#4E9A3A" stroke-width="3"/>
+
+    <!-- LAAG: vijver / put -->
+    <rect x="24" y="146" width="100" height="46" rx="16" fill="#CDB79A" stroke="#a4906b" stroke-width="3"/>
+    <g clip-path="url(#wg-pond)">
+      <rect id="wg-pondwater" x="30" y="156" width="88" height="34" fill="#4FB6DC"/>
+      <ellipse cx="74" cy="157" rx="44" ry="5" fill="#7FD0EC" opacity="0.8"/>
+    </g>
+    <text x="74" y="207" font-size="12" text-anchor="middle" fill="#2b6b2b" font-weight="bold">laag</text>
+
+    <!-- de pomp -->
+    <rect x="120" y="108" width="18" height="80" rx="5" fill="#8794A3" stroke="#5b6673" stroke-width="2"/>
+    <rect x="123" y="112" width="5" height="72" rx="2" fill="#AEB9C6"/>
+    <path d="M129,122 q24,0 24,-2" fill="none" stroke="#8794A3" stroke-width="9" stroke-linecap="round"/>
+    <path d="M150,120 L150,52 L258,52 L258,74" fill="none" stroke="#93A6B4" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M150,120 L150,52 L258,52 L258,74" fill="none" stroke="#C4D2DC" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <g id="wg-handle">
+      <rect x="92" y="102" width="46" height="10" rx="5" fill="#E64C3C" stroke="#b83a2d" stroke-width="1.5"/>
+      <circle cx="95" cy="107" r="8" fill="#F2C94C" stroke="#c99a1f" stroke-width="1.5"/>
+    </g>
+    <circle cx="129" cy="107" r="3" fill="#5b6673"/>
+
+    <!-- HOOG: de ton op de heuvel -->
+    <rect x="232" y="150" width="9" height="34" rx="3" fill="#A2662A"/>
+    <rect x="279" y="150" width="9" height="34" rx="3" fill="#A2662A"/>
+    <rect x="224" y="72" width="72" height="80" rx="11" fill="#E9F7FD"/>
+    <g clip-path="url(#wg-tank)">
+      <rect id="wg-tankwater" x="224" y="150" width="72" height="0" fill="#4FB6DC"/>
+      <rect id="wg-tanksurf" x="224" y="150" width="72" height="4" fill="#7FD0EC" opacity="0.9"/>
+    </g>
+    <rect x="224" y="72" width="72" height="80" rx="11" fill="none" stroke="#7FB2CB" stroke-width="4"/>
+    <rect x="233" y="82" width="9" height="60" rx="4.5" fill="#ffffff" opacity="0.35"/>
+    <line x1="224" y1="80" x2="296" y2="80" stroke="#2ECC40" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="290" y="77" font-size="11" text-anchor="end">🏁</text>
+    <text x="260" y="207" font-size="12" text-anchor="middle" fill="#2b6b2b" font-weight="bold">hoog</text>
+
+    <!-- kraan + bloemetje dat water krijgt als de ton vol is -->
+    <path d="M296,140 q12,0 12,9" fill="none" stroke="#7FB2CB" stroke-width="6" stroke-linecap="round"/>
+    <path id="wg-pour" d="M308,150 q3,9 0,18" fill="none" stroke="#4FB6DC" stroke-width="5" stroke-linecap="round" opacity="0"/>
+    <text id="wg-flower" x="308" y="188" font-size="26" text-anchor="middle">🌱</text>
+
+    <!-- druppels + hint -->
+    <g id="wg-drops"></g>
+    <g id="wg-hint">
+      <text x="112" y="88" font-size="24" text-anchor="middle">👇</text>
+      <animateTransform attributeName="transform" type="translate" values="0 0;0 9;0 0" dur="0.9s" repeatCount="indefinite"/>
+    </g>
+
+    <!-- grote druk-knop over de pomp -->
+    <rect id="wg-hit" x="78" y="92" width="94" height="104" fill="transparent" style="cursor:pointer"/>
+  </svg>`;
+  body.appendChild(wrap);
+
+  const q = id => wrap.querySelector("#" + id);
+  const handleG = q("wg-handle"), pondW = q("wg-pondwater"),
+        tankW = q("wg-tankwater"), tankSurf = q("wg-tanksurf"),
+        dropLayer = q("wg-drops"), hint = q("wg-hint"),
+        pour = q("wg-pour"), flower = q("wg-flower"), hit = q("wg-hit");
+
+  let handleA = 0, handleTarget = 0;   // graden
+  let tank = 0, tankDisp = 0;          // gepompte druppels
+  let done = false, phase = 0, tPrev = performance.now(), alive = true;
+  const drops = [];
+
+  function splash(x, y) {
+    const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    c.setAttribute("cx", x); c.setAttribute("cy", y);
+    c.setAttribute("r", 2); c.setAttribute("fill", "#7FD0EC");
+    dropLayer.appendChild(c);
+    const t0 = performance.now();
+    (function grow(now) {
+      const k = Math.min(1, (now - t0) / 400);
+      c.setAttribute("r", 2 + k * 9);
+      c.setAttribute("opacity", 1 - k);
+      if (k < 1) requestAnimationFrame(grow); else c.remove();
+    })(t0);
+  }
+
+  function onArrive() {
+    tank = Math.min(MAX, tank + 1);
+    splash(258, 76);
+    tone(660, 0.12, { type: "sine", glide: 1100, vol: 0.14 });
+    if (tank >= MAX && !done) finish();
+  }
+
+  function pomp() {
+    if (done) return;
+    if (hint) { hint.remove(); }
+    handleTarget = -26;                       // hendel omlaag
+    tone(150, 0.14, { type: "sine", glide: 90, vol: 0.22 });
+    tone(230, 0.1, { type: "square", glide: 160, vol: 0.08, delay: 0.05 });
+    if (tank + drops.length >= MAX) return;   // niet meer dan de ton aankan
+    const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    c.setAttribute("r", 4.5); c.setAttribute("fill", "#4FB6DC");
+    c.setAttribute("cx", P[0][0]); c.setAttribute("cy", P[0][1]);
+    dropLayer.appendChild(c);
+    drops.push({ t: 0, el: c });
+  }
+
+  function finish() {
+    done = true;
+    pour.setAttribute("opacity", "1");
+    flower.textContent = "🌻";
+    flower.setAttribute("font-size", "20");
+    const g0 = performance.now();
+    (function bloom(now) {                     // bloem popt open
+      const k = Math.min(1, (now - g0) / 500);
+      flower.setAttribute("font-size", 20 + k * 14);
+      if (k < 1) requestAnimationFrame(bloom);
+    })(g0);
+    speak(`Wauw ${NAAM}! Het water is helemaal naar boven gepompt. De zonnebloem krijgt lekker water!`);
+    knop.style.display = "";
+    setTimeout(() => { if (alive) awardSticker(); }, 1900);
+  }
+
+  function reset() {
+    tank = 0; done = false;
+    pour.setAttribute("opacity", "0");
+    flower.textContent = "🌱"; flower.setAttribute("font-size", "26");
+    knop.style.display = "none";
+    speak(`Nog een keer pompen, ${NAAM}! Druk maar op de rode hendel.`);
+  }
+
+  hit.addEventListener("pointerdown", e => { e.preventDefault(); pomp(); });
+
+  const knop = document.createElement("button");
+  knop.textContent = "🔁 Nog een keer!";
+  knop.style.cssText = "position:absolute; bottom:4vmin; left:50%; transform:translateX(-50%);" +
+    "display:none; font:inherit; font-size:clamp(16px,3.4vmin,26px); font-weight:800; color:#fff;" +
+    "background:#2b8cff; border:none; border-radius:999px; padding:1.4vmin 4vmin; cursor:pointer;" +
+    "box-shadow:0 5px 0 #1a63c0, 0 8px 16px rgba(0,0,0,.22);";
+  knop.addEventListener("click", () => { sfx.plop(); reset(); });
+  wrap.appendChild(knop);
+
+  let raf;
+  function loop(now) {
+    const dt = Math.min((now - tPrev) / 1000, 0.05); tPrev = now; phase += dt;
+    // hendel soepel terug naar rust
+    handleA += (handleTarget - handleA) * Math.min(1, dt * 15);
+    if (handleTarget !== 0 && Math.abs(handleA - handleTarget) < 2) handleTarget = 0;
+    handleG.setAttribute("transform", `rotate(${handleA.toFixed(2)} 129 107)`);
+    // vijver klotst zachtjes
+    const py = 156 + Math.sin(phase * 2.2) * 1.3;
+    pondW.setAttribute("y", py); pondW.setAttribute("height", 192 - py);
+    // druppels langs de buis
+    for (let i = drops.length - 1; i >= 0; i--) {
+      const d = drops[i]; d.t += dt / 0.7;
+      if (d.t >= 1) { d.el.remove(); drops.splice(i, 1); onArrive(); }
+      else { const p = ptAt(d.t); d.el.setAttribute("cx", p.x.toFixed(1)); d.el.setAttribute("cy", p.y.toFixed(1)); }
+    }
+    // ton loopt vol
+    tankDisp += (tank - tankDisp) * Math.min(1, dt * 8);
+    const y0 = 78, y1 = 150, h = (y1 - y0) * (tankDisp / MAX);
+    tankW.setAttribute("y", (y1 - h).toFixed(1)); tankW.setAttribute("height", h.toFixed(1));
+    tankSurf.setAttribute("y", (y1 - h - 2).toFixed(1));
+    tankSurf.setAttribute("opacity", h > 2 ? 0.9 : 0);
+    raf = requestAnimationFrame(loop);
+  }
+  raf = requestAnimationFrame(loop);
+
+  speak(`Kijk ${NAAM}! Hier beneden is water en daarboven staat een lege ton. Druk op de pomp om het water naar boven te pompen!`);
+  return () => { alive = false; cancelAnimationFrame(raf); };
+};
+
+/* ============================================================
    Start
    ============================================================ */
 function updateSoundBtn() {
@@ -4028,6 +4234,25 @@ const swing=new THREE.Group();
   const fish=new THREE.Mesh(new THREE.SphereGeometry(0.12,10,10),M(COL.orange,{r:0.6}));
   fish.scale.set(1.4,0.8,0.8);fish.position.set(0.1,-0.06,0.5);pond.add(fish);
   pond.position.set(5.4,0,4.6);scene.add(pond);})();
+(()=>{const well=new THREE.Group();
+  // lage stenen put met water (het lage punt)
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(0.62,0.7,0.5,20),M(COL.path,{r:0.9}));base.position.y=0.25;base.castShadow=true;base.receiveShadow=true;well.add(base);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.6,0.09,8,22),M(shade(COL.path,-0.2),{r:0.9}));ring.rotation.x=Math.PI/2;ring.position.y=0.5;well.add(ring);
+  const lowW=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,0.06,20),new THREE.MeshStandardMaterial({color:'#5BB8D8',roughness:0.08,metalness:0.2,envMapIntensity:1.4}));lowW.position.y=0.24;well.add(lowW);
+  // posten + dakje
+  for(const sgn of [-1,1]){const post=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.055,1.2,8),M(COL.woodD,{r:0.9}));post.position.set(sgn*0.5,1.1,0);post.castShadow=true;well.add(post);}
+  const roof=new THREE.Mesh(new THREE.ConeGeometry(0.98,0.5,4),M(COL.coral,{r:0.7}));roof.position.y=1.92;roof.rotation.y=Math.PI/4;roof.castShadow=true;well.add(roof);
+  const bar=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,1.06,8),M(COL.wood,{r:0.8}));bar.rotation.z=Math.PI/2;bar.position.y=1.55;well.add(bar);
+  // emmer hoog opgehesen (het hoge punt) met water erin
+  const rope=new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,0.52,6),M('#EADFCB',{r:1}));rope.position.set(0,1.28,0);well.add(rope);
+  const bucket=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.13,0.24,14),M(COL.blue,{r:0.6}));bucket.position.set(0,0.9,0);bucket.castShadow=true;well.add(bucket);
+  const bhandle=new THREE.Mesh(new THREE.TorusGeometry(0.15,0.015,6,16,Math.PI),M('#EADFCB',{r:0.8}));bhandle.position.set(0,1.02,0);well.add(bhandle);
+  const bWater=new THREE.Mesh(new THREE.CylinderGeometry(0.135,0.135,0.05,14),new THREE.MeshStandardMaterial({color:'#5BB8D8',roughness:0.1,metalness:0.2}));bWater.position.set(0,0.99,0);well.add(bWater);
+  well.position.set(-4.7,0,4.3);well.rotation.y=0.4;scene.add(well);
+  // onzichtbare hitbox → opent het waterspel
+  const whb=new THREE.Mesh(new THREE.BoxGeometry(1.7,2.4,1.7),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+  whb.position.set(-4.7,1.1,4.3);whb.userData.room={name:'Water',id:'water',color:COL.blue};scene.add(whb);hitboxes.push(whb);
+})();
 function yarn(x,z,col,s){const y=new THREE.Group();
   const ball=new THREE.Mesh(new THREE.SphereGeometry(0.16,16,14),M(col,{r:0.6}));ball.position.y=0.16;ball.castShadow=true;y.add(ball);
   for(const rot of [[0.4,0.2,0],[1.2,-0.5,0.5],[2.0,0.9,-0.4]]){
@@ -4124,7 +4349,8 @@ function roomBlurb(n){return ({
   Kleuren:'Kies je kleuren en maak iets moois!',
   Verkleden:'Kies een leuke outfit voor de poes!',
   Speelkamer:'De leukste kamer van het huis!',
-  Stickers:'Verzamel glimmende stickers!'})[n]||'Klaar om te spelen?';}
+  Stickers:'Verzamel glimmende stickers!',
+  Water:'Pomp het water van beneden naar de hoge ton!'})[n]||'Klaar om te spelen?';}
 
 function iconSVG(k){const p={
   memory:'<rect x="4" y="4" width="7" height="9" rx="1.5"/><rect x="13" y="9" width="7" height="9" rx="1.5"/>',
@@ -4134,7 +4360,8 @@ function iconSVG(k){const p={
   palette:'<path d="M12 4a8 7 0 100 14 2 2 0 002-2 1.5 1.5 0 011.5-1.5H18a3 3 0 003-3A7 6 0 0012 4z"/><circle cx="8" cy="9" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="15" cy="9" r="1"/>',
   dressup:'<path d="M9 4l-4 3 2 3 2-1v9h6V9l2 1 2-3-4-3a3 3 0 01-6 0z"/>',
   play:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 010 16M4 12h16"/>',
-  sticker:'<path d="M12 3l2.5 5 5.5.8-4 4 1 5.4-5-2.6-5 2.6 1-5.4-4-4 5.5-.8z"/>'}[k]||'';
+  sticker:'<path d="M12 3l2.5 5 5.5.8-4 4 1 5.4-5-2.6-5 2.6 1-5.4-4-4 5.5-.8z"/>',
+  water:'<path d="M12 3c4 5 6 8 6 11a6 6 0 01-12 0c0-3 2-6 6-11z"/>'}[k]||'';
   return `<svg viewBox="0 0 24 24">${p}</svg>`;}
 
 function confetti(only){

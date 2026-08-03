@@ -28,6 +28,7 @@ Vercel), niet met een dubbelklik op het bestand.
 | 🎨 Kleuren | Zes kleurplaten (kat, raket, vis, raceauto, dino, kasteel) en vrij tekenen op de schildersezel |
 | 🦸 Verkleden | De kat op het podium aankleden: hoeden, capes, vleugels, een vriendje en meer |
 | 🎪 Speelkamer | Circustent vol knopjes: xylofoon, bellenblaas, draaimolen, verrassingsdoosjes |
+| 💧 Water pompen | Klik op de **waterput** in de tuin: pomp het water van de lage vijver omhoog naar de hoge ton |
 | ⭐ Stickers | 18 te verdienen stickers vrij in je plakboek plakken |
 
 Met de spelletjes verdien je stickers voor het stickerboek. Er is geen "game
@@ -35,8 +36,8 @@ over" en niets gaat ooit fout — alles mag opnieuw en op je eigen tempo.
 
 Ook leuk: klik in het huis maar eens op de katjes, de deurbel 🔔, de klok 🕰️,
 de brievenbus 📬, de bloempot 🪴, het vogelhuisje op het dak, de hond in zijn
-hok 🐶, de gieter, de voetbal ⚽ en Mauwtje de kat… En let maar eens op wat er
-allemaal door de lucht vliegt!
+hok 🐶, de gieter, de voetbal ⚽, de waterput 💧 en Mauwtje de kat… En let maar
+eens op wat er allemaal door de lucht vliegt!
 
 ## Voor de ouders
 
