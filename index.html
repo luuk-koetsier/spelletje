@@ -3244,6 +3244,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 const COL = {
   cream:'#FFF6E9', creamD:'#F3E4CB', wall:'#FFFDF8',
   teal:'#FF5D8F', tealD:'#E0447B', tealDD:'#C22F63',
+  roofRed:'#E63946', roofRedD:'#B7222F',
   orange:'#FF9F1C', coral:'#FF5A5F', blue:'#4D96FF',
   purple:'#9B5DE5', pink:'#F063A8', green:'#57C24D', yellow:'#FFD93D',
   grass:'#8FD46A', grassD:'#69B84A', dirt:'#E7D2A6', path:'#F1E4C6',
@@ -3458,8 +3459,8 @@ const roof=new THREE.Group();house.add(roof);
   const geo=new THREE.ExtrudeGeometry(shape,{depth,bevelEnabled:true,bevelThickness:0.06,bevelSize:0.06,bevelSegments:1,steps:1});
   geo.translate(0,0,-depth/2);
   const scv=document.createElement('canvas');scv.width=256;scv.height=256;const sxc=scv.getContext('2d');
-  sxc.fillStyle=COL.teal;sxc.fillRect(0,0,256,256);
-  sxc.fillStyle=COL.tealD;
+  sxc.fillStyle=COL.roofRed;sxc.fillRect(0,0,256,256);
+  sxc.fillStyle=COL.roofRedD;
   for(let row=0;row<8;row++){const yy=row*32;const off=row%2?24:0;for(let xx=-48;xx<256;xx+=48){sxc.beginPath();sxc.arc(xx+off+24,yy,26,0,Math.PI);sxc.fill();}}
   sxc.strokeStyle='rgba(255,255,255,.12)';sxc.lineWidth=3;for(let row=0;row<9;row++){sxc.beginPath();sxc.moveTo(0,row*32);sxc.lineTo(256,row*32);sxc.stroke();}
   const stex=new THREE.CanvasTexture(scv);stex.colorSpace=THREE.SRGBColorSpace;stex.wrapS=stex.wrapT=THREE.RepeatWrapping;stex.repeat.set(3,2);
@@ -3471,7 +3472,7 @@ const roof=new THREE.Group();house.add(roof);
   eave.position.set(0,bodyH+0.02,0);eave.castShadow=true;roof.add(eave);
   for(const sgn of [-1,1]){
     const ear=new THREE.Group();ear.position.set(sgn*1.15,bodyH+1.28,depth/2-0.15);
-    const outer=new THREE.Mesh(new THREE.ConeGeometry(0.42,0.8,4),M(COL.teal,{r:0.8}));
+    const outer=new THREE.Mesh(new THREE.ConeGeometry(0.42,0.8,4),M(COL.roofRed,{r:0.8}));
     outer.rotation.y=Math.PI/4;outer.castShadow=true;ear.add(outer);
     const inner=new THREE.Mesh(new THREE.ConeGeometry(0.24,0.5,4),M(COL.pinkEar,{r:0.7}));
     inner.rotation.y=Math.PI/4;inner.position.set(0,-0.02,0.16);ear.add(inner);
