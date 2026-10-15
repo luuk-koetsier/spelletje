@@ -4319,7 +4319,8 @@ window.__hub3d={
     camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);if(composer)composer.setSize(innerWidth,innerHeight);},
 };
 
-await document.fonts.ready.catch(()=>{});
+// niet eindeloos op Google Fonts wachten (traag of geblokkeerd netwerk): max 2,5 s
+await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,2500))]).catch(()=>{});
 for(const r of roomObjs){r.panel.material.map=roomTexture(r.room);r.panel.material.emissiveMap=r.panel.material.map;r.panel.material.needsUpdate=true;}
 animate();
 setTimeout(()=>{if(!started){controls.autoRotate=true;}},2000);
