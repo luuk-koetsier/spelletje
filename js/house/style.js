@@ -81,3 +81,11 @@ export function blobShadow(radius, opacity = 0.4) {
   m.renderOrder = 1;
   return m;
 }
+
+// Kleur lichter (amt > 0) of donkerder (amt < 0) maken via de lichtheid. Geeft '#rrggbb'.
+export function shade(hex, amt) {
+  const c = new THREE.Color(hex), hsl = {};
+  c.getHSL(hsl);
+  c.setHSL(hsl.h, hsl.s, Math.max(0, Math.min(1, hsl.l + amt)));
+  return '#' + c.getHexString();
+}
