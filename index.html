@@ -3451,7 +3451,7 @@ for(const cell of cells){
   block.position.set(COLW*0.26,-FH/2+T*0.6+0.18,RD*0.12);block.castShadow=true;block.rotation.y=0.5;g.add(block);
   const hb=new THREE.Mesh(new THREE.BoxGeometry(COLW-T,FH-T,RD*0.9),
     new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
-  hb.position.set(0,0,RD*0.15);hb.userData.room=room;hb.userData.group=g;house.add(hb);
+  hb.position.set(px,py,RD*0.15);hb.userData.room=room;hb.userData.group=g;house.add(hb);
   hitboxes.push(hb);
   roomObjs.push({room,group:g,panel,baseZ:g.position.z,hover:0});
 }
