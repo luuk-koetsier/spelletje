@@ -3318,10 +3318,14 @@ function roomTexture(room){
 }
 function shade(hex,amt){const c=new THREE.Color(hex);const hsl={};c.getHSL(hsl);hsl.l=Math.max(0,Math.min(1,hsl.l+amt));c.setHSL(hsl.h,hsl.s,hsl.l);return '#'+c.getHexString();}
 
+const qs=new URLSearchParams(location.search);
+const DEBUG=qs.get('debug')==='1';
+const LOW=qs.get('q')==='low';
+const dbgEvents=[];
 const canvas=document.getElementById('scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
-renderer.setPixelRatio(Math.min(2,devicePixelRatio));
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.VSMShadowMap;
+renderer.setPixelRatio(LOW?1:Math.min(2,devicePixelRatio));
+renderer.shadowMap.enabled=!LOW;renderer.shadowMap.type=THREE.VSMShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.7;
 
 const scene=new THREE.Scene();
@@ -3419,7 +3423,7 @@ for(const cell of cells){
   block.position.set(COLW*0.26,-FH/2+T*0.6+0.18,RD*0.12);block.castShadow=true;block.rotation.y=0.5;g.add(block);
   const hb=new THREE.Mesh(new THREE.BoxGeometry(COLW-T,FH-T,RD*0.9),
     new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
-  hb.position.set(0,0,RD*0.15);hb.userData.room=room;hb.userData.group=g;house.add(hb);
+  hb.position.set(px,py,RD*0.15);hb.userData.room=room;hb.userData.group=g;house.add(hb);
   hitboxes.push(hb);
   roomObjs.push({room,group:g,panel,baseZ:g.position.z,hover:0});
 }
@@ -4091,7 +4095,7 @@ canvas.addEventListener('pointerup',e=>{
   const quick=performance.now()-pt0<450;
   if(!moved&&quick){const hit=castAt(e.clientX,e.clientY);
     if(hit&&hit.object.userData.room){openRoom(hit.object.userData.room);}
-    else if(hit&&hit.object.userData.doorHit){bounceDoor();meow();}}
+    else if(hit&&hit.object.userData.doorHit){dbgEvents.push('door');bounceDoor();meow();}}
 });
 canvas.addEventListener('pointerleave',()=>{tip.style.opacity='0';hovered=null;});
 
@@ -4100,7 +4104,7 @@ let doorBounce=0;function bounceDoor(){doorBounce=1;}
 const modal=document.getElementById('modal');
 let currentRoom=null;
 function openRoom(room){
-  currentRoom=room;
+  currentRoom=room;dbgEvents.push('open:'+room.id);
   document.getElementById('cardTitle').textContent=room.name;
   document.getElementById('cardText').textContent=roomBlurb(room.name);
   const em=document.getElementById('cardEmoji');em.style.background=room.color;
@@ -4245,7 +4249,7 @@ let composer=null,gradePass=null;
 
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);if(composer)composer.setSize(innerWidth,innerHeight);});
 renderer.setSize(innerWidth,innerHeight);
-composer=(()=>{
+composer=LOW?null:(()=>{
  try{
   const cmp=new EffectComposer(renderer);
   cmp.addPass(new RenderPass(scene,camera));
@@ -4287,7 +4291,27 @@ window.__hub3d={
 
 await document.fonts.ready.catch(()=>{});
 for(const r of roomObjs){r.panel.material.map=roomTexture(r.room);r.panel.material.emissiveMap=r.panel.material.map;r.panel.material.needsUpdate=true;}
+if(DEBUG){
+  // Testhook (alleen met ?debug=1): vaste camera, geen intro en geen automatisch draaien.
+  introT=1;started=true;controls.autoRotate=false;camera.position.copy(camEnd);camera.lookAt(TARGET);controls.update();
+  const pt=(o)=>{camera.updateMatrixWorld();const v=o.getWorldPosition(new THREE.Vector3()).project(camera);
+    return {x:Math.round((v.x+1)/2*innerWidth),y:Math.round((1-v.y)/2*innerHeight)};};
+  const fire=(type,x,y,buttons)=>canvas.dispatchEvent(new PointerEvent(type,{pointerId:1,pointerType:'touch',isPrimary:true,
+    clientX:x,clientY:y,buttons,button:0,bubbles:true,cancelable:true}));
+  window.__house={
+    ready:false,events:dbgEvents,
+    info(){const i=renderer.info.render;return {calls:i.calls,triangles:i.triangles,tier:LOW?'low':'high'};},
+    rooms(){return hitboxes.filter(h=>h.userData.room).map(h=>({id:h.userData.room.id,...pt(h)}));},
+    door(){return pt(hitboxes.find(h=>h.userData.doorHit));},
+    tap(x,y){fire('pointerdown',x,y,1);fire('pointerup',x,y,0);},
+    drag(x0,y0,x1,y1){fire('pointerdown',x0,y0,1);
+      for(let i=1;i<=6;i++)fire('pointermove',x0+(x1-x0)*i/6,y0+(y1-y0)*i/6,1);
+      fire('pointerup',x1,y1,0);},
+    frame(){camera.updateMatrixWorld();if(composer)composer.render();else renderer.render(scene,camera);},
+  };
+}
 animate();
+if(DEBUG)window.__house.ready=true;
 setTimeout(()=>{if(!started){controls.autoRotate=true;}},2000);
 setTimeout(()=>{const l=document.getElementById('load');if(l){l.style.opacity='0';setTimeout(()=>l.remove(),500);}},700);
 </script>
