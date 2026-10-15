@@ -107,9 +107,41 @@ try {
   const sz = await page.evaluate(() => { const c = document.getElementById('scene'); return { w: c.clientWidth, h: c.clientHeight }; });
   check(sz.w === 1280 && sz.h === 800, 'canvasmaat na resume is ' + JSON.stringify(sz));
 
+  // Stap B: alle kamermodellen geladen, zonder fouten.
+  await page.waitForFunction(() => window.__house.stageB === 'done', null, { timeout: 60000, polling: 250 })
+    .catch(() => { throw new Error('stap B (modellen) niet klaar binnen 60 s'); });
+  const am = await page.evaluate(() => window.__house.assets());
+  console.log('modellen: ' + am.loaded + ' geladen, ' + am.failed + ' mislukt');
+  check(am.failed === 0, 'modellen mislukt: ' + JSON.stringify(am));
+  check(am.loaded === am.wanted && am.wanted > 0, 'niet alle modellen geladen: ' + JSON.stringify(am));
+
   check(errors.length === 0, errors[0]);
-  console.log('SMOKE OK');
   await browser.close();
+
+  // Modellen die niet laden (?failmodels=1) breken het huis niet.
+  {
+    const f = await open({ width: 1280, height: 800 }, 'debug=1&q=low&failmodels=1');
+    browser = f.browser;
+    const fp = f.page;
+    try { await waitReady(fp, 60000); }
+    catch { await fail('failmodels: __house.ready niet binnen 60 s' + (f.errors.length ? ' (' + f.errors[0] + ')' : '')); }
+    await fp.waitForFunction(() => window.__house.stageB === 'done', null, { timeout: 60000, polling: 250 })
+      .catch(() => { throw new Error('failmodels: stap B niet afgerond'); });
+    const fa = await fp.evaluate(() => window.__house.assets && window.__house.assets());
+    check(fa && fa.failmodels === true && fa.loaded === 0, 'failmodels: vlag werkt niet: ' + JSON.stringify(fa));
+    const frs = await fp.evaluate(() => window.__house.rooms());
+    check(frs.length === 8, 'failmodels: rooms().length is ' + frs.length);
+    for (const r of frs) {
+      await fp.evaluate(() => { window.__house.events.length = 0; document.getElementById('modal').classList.remove('open'); });
+      await fp.evaluate(([x, y]) => window.__house.tap(x, y), [r.x, r.y]);
+      const ev = await fp.evaluate(() => window.__house.events.slice());
+      check(ev.length === 1 && ev[0] === 'open:' + r.id, 'failmodels: tik op ' + r.id + ' gaf ' + JSON.stringify(ev));
+    }
+    check(f.errors.length === 0, 'failmodels: ' + f.errors[0]);
+    await browser.close();
+  }
+
+  console.log('SMOKE OK');
 } catch (e) {
   await fail(e.message);
 }

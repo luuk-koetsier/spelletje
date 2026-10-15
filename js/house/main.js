@@ -1039,9 +1039,20 @@ if(DEBUG){
       for(let i=1;i<=6;i++)fire('pointermove',x0+(x1-x0)*i/6,y0+(y1-y0)*i/6,1);
       fire('pointerup',x1,y1,0);},
     frame(){camera.updateMatrixWorld();renderer.render(scene,camera);},
+    stageB:'pending',
+    assets(){return assetInfo();},
   };
 }
+// Stap A: huisvorm, licht, lucht en kamertikvlakken staan er al en renderen direct.
 animate();
 if(DEBUG)window.__house.ready=true;
+// Stap B: de kamermodellen op de achtergrond laden. Wat niet laadt wordt overgeslagen.
+// (Inrichting en katten plaatsen volgt in latere taken.)
+// De laadcode zit in een losse import, zodat stap A er nooit op wacht of door breekt.
+let assetInfo=()=>null;
+import('./assets.js').then(a=>{
+  assetInfo=()=>({...a.stats,wanted:a.MODELS.length});
+  return a.preload(a.MODELS);
+}).catch(e=>console.warn('stap B:',e)).finally(()=>{if(DEBUG)window.__house.stageB='done';});
 setTimeout(()=>{if(!started){controls.autoRotate=true;}},2000);
 setTimeout(()=>{const l=document.getElementById('load');if(l){l.style.opacity='0';setTimeout(()=>l.remove(),500);}},700);
