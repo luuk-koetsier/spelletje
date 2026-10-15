@@ -55,7 +55,8 @@ zwaarder worden dan nu. Liefst wordt het lichter.
 ## Niet-doelen
 
 - De losse spelletjes (Memory, Puzzel enzovoort) worden niet aangepast.
-- Geen nieuwe spelmechanieken of kamers. Het blijven acht kamers plus de
+- Geen nieuwe spelmechanieken of kamers (de tikbare verrassingen zijn
+  geen nieuwe mechaniek, die bestonden al in de 2D-versie). Het blijven acht kamers plus de
   voordeur.
 - Geen geluid, stem of voortgangssysteem aanpassen.
 - Geen build-stap of framework introduceren. Het blijft een statische site
@@ -84,13 +85,48 @@ zwaarder worden dan nu. Liefst wordt het lichter.
 - Op de voordeur tikken laat de deur stuiteren en miauwen.
 - Het pop-upkaartje met de knop "Spelen!" dat verschijnt als je op een
   kamer tikt, blijft bestaan. Het krijgt de nieuwe stijl mee.
-- [OPEN VRAAG AAN LUUK: verrassingen om aan te tikken, zie onderaan.]
+- Elke kat in het huis reageert als je erop tikt (een sprongetje, een
+  miauw).
+
+## Verrassingen om aan te tikken (besluit Luuk: hoort bij deze upgrade)
+
+Bij Gabby's Dollhouse kun je overal op tikken. De verrassingen uit het oude
+2D-huis (in `scenes.hub`, nu verborgen via `#scenery`) komen terug als
+tikbare 3D-objecten in de nieuwe stijl:
+
+| Object | Plek (suggestie) | Reactie |
+|---|---|---|
+| Mauwtje de kat | Bij de voordeur | Springt op, miauwt, zegt iets liefs |
+| Deurbel | Naast de voordeur | Ding-dong, deur gaat even open |
+| Klok | Gevel of in een kamer | Tikt, wijzers draaien, koekoek-achtig geluid |
+| Brievenbus | Bij het pad | Klepje open, er vliegt een briefje uit |
+| Bloempot | Bij de voordeur | Bloem gaat open |
+| Vogelhuisje | Op het dak | Vogeltje kijkt naar buiten, tsjilp |
+| Hond in zijn hok | In de tuin | Kijkt naar buiten, woef |
+| Gieter | In de tuin | Giet water, bloemetjes groeien |
+| Voetbal | In de tuin | Rolt of stuitert weg |
+| Dingen in de lucht | Lucht | Vliegen af en toe voorbij, tikbaar voor een effectje |
+
+De gesproken zinnetjes en geluidjes uit de oude 2D-versie worden
+hergebruikt (`speak`, `pick`, `sfx`, `NAAM`). Elke reactie is kort,
+vrolijk en kan niet fout gaan. Tikken op een verrassing mag nooit per
+ongeluk een kamer openen, en draaien met de vinger mag geen verrassing
+activeren (zelfde regel als nu: alleen een korte tik zonder beweging telt).
+Elke verrassing heeft een ruim, onzichtbaar tikvlak, zodat kleine vingers
+het makkelijk raken.
+
+Dit telt mee in het prestatiebudget. De verrassingen zijn klein en
+eenvoudig, en de animaties zijn simpele beweging van onderdelen (geen
+zware animatiebestanden).
 - Geen externe CDN: alles staat lokaal in de repo, zoals Three.js nu in
   `vendor/three/`.
 
 ## Beslissingen van Luuk
 
 - Stijlrichting: Gabby's Dollhouse.
+- De tikbare verrassingen komen terug in 3D, als onderdeel van deze
+  upgrade.
+- Claude mag het eindresultaat zelf naar `main` mergen.
 - Kant-en-klare 3D-modellen mogen gebruikt worden. Het hoeft niet allemaal
   uit code te komen.
 - Doelapparaten: iPhone en oude iPad. Niet te zwaar.
@@ -163,6 +199,9 @@ Richtwaarde voor de oudste iPad: een iPad uit ongeveer 2018 (A10-chip).
 ## Werkwijze
 
 - Werk op branch `claude/house-visual-upgrade-avn10s`.
+- Besluit Luuk: Claude mag het eindresultaat zelf naar `main` mergen (via
+  een pull request), zodra de laatste fase klaar en gecontroleerd is. Dan
+  staat het live op spelletje-peach.vercel.app. Geen force pushes.
 - In fases, zodat Luuk tussendoor op zijn telefoon kan kijken via de
   Vercel-preview van de branch. Na elke fase een korte melding met wat er
   te zien is. Volgorde: eerst stijl, palet, licht en prestatiebasis, dan
