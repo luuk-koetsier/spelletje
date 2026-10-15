@@ -1349,6 +1349,24 @@
 <button id="sound-btn" class="icon-btn" title="Geluid aan/uit">🔊</button>
 
 <script>
+// Laat fouten zien in plaats van dat knoppen stilletjes niets doen,
+// zodat er een foto van gemaakt kan worden.
+function toonFout(msg) {
+  let el = document.getElementById("fout-balk");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "fout-balk";
+    el.style.cssText = "position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#c62317;color:#fff;" +
+      "font:600 14px/1.4 system-ui,sans-serif;padding:10px 40px 10px 14px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.3);";
+    el.addEventListener("click", () => el.remove());
+    document.body.appendChild(el);
+  }
+  el.textContent = "Oeps, er ging iets mis: " + msg + "  (tik om te sluiten)";
+}
+window.addEventListener("error", e => toonFout(e.message || String(e.error)));
+window.addEventListener("unhandledrejection", e => toonFout(String(e.reason && e.reason.message || e.reason)));
+</script>
+<script>
 "use strict";
 
 /* ============================================================
@@ -1356,6 +1374,12 @@
    ============================================================ */
 const $ = sel => document.querySelector(sel);
 const NAAM = "Sep";
+// localStorage kan geblokkeerd zijn (Safari met cookies uit, privévenster, in-app browsers);
+// dan gooit al het aanraken ervan een fout. Nooit het hele spel laten crashen.
+const opslag = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
 const randInt = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 function shuffle(arr) {
@@ -1371,7 +1395,7 @@ function shuffle(arr) {
    Geluid (WebAudio, geen bestanden)
    ============================================================ */
 let audioCtx = null;
-let soundOn = localStorage.getItem("kh_sound") !== "uit";
+let soundOn = opslag.get("kh_sound") !== "uit";
 
 function ctx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1557,10 +1581,10 @@ function zwevers(container, emojis, n = 5) {
    ============================================================ */
 const STICKER_POOL = ["🦸", "🚀", "😺", "🚒", "🦖", "⭐", "🏴‍☠️", "⚽", "🌈", "🐬", "🛡️", "🏆", "🐉", "🚁", "🏎️", "🐸", "🎸", "🥇"];
 function stickerState() {
-  try { return JSON.parse(localStorage.getItem("kh_stickers")) || { earned: 0, pos: {} }; }
+  try { return JSON.parse(opslag.get("kh_stickers")) || { earned: 0, pos: {} }; }
   catch { return { earned: 0, pos: {} }; }
 }
-function saveStickerState(s) { localStorage.setItem("kh_stickers", JSON.stringify(s)); }
+function saveStickerState(s) { opslag.set("kh_stickers", JSON.stringify(s)); }
 
 function awardSticker() {
   const s = stickerState();
@@ -1658,7 +1682,13 @@ function launchGame(id) {
   const ui = document.getElementById("ui"); if (ui) ui.classList.add("hidden");
   const cv = document.getElementById("scene"); if (cv) cv.style.display = "none";
   if (window.__hub3d) window.__hub3d.pause();
-  gaNaar(id);
+  try {
+    gaNaar(id);
+  } catch (err) {
+    // niet op een leeg scherm blijven hangen: terug naar het huis en de fout tonen
+    backToHouse();
+    toonFout(err.message);
+  }
 }
 function backToHouse() {
   if (huidigeCleanup) { huidigeCleanup(); huidigeCleanup = null; }
@@ -1677,7 +1707,7 @@ window.KH = {
   get sound() { return soundOn; },
   toggleSound() {
     soundOn = !soundOn;
-    localStorage.setItem("kh_sound", soundOn ? "aan" : "uit");
+    opslag.set("kh_sound", soundOn ? "aan" : "uit");
     updateSoundBtn();
     if (!soundOn && "speechSynthesis" in window) speechSynthesis.cancel();
     return soundOn;
@@ -2726,7 +2756,6 @@ scenes.kleuren = function (app) {
     g.fillStyle = "#fff";
     g.fillRect(0, 0, canvas.width, canvas.height);
   }
-  maten();
 
   const tools = $("#paint-tools");
   PALET.forEach(k => {
@@ -2749,6 +2778,9 @@ scenes.kleuren = function (app) {
     b.addEventListener("click", () => { sfx.klik(); dikte = d; });
     tools.appendChild(b);
   });
+  // pas meten als de kleurenbalk er staat, anders is het doek te breed en
+  // komt de verf naast de vinger terecht
+  maten();
 
   function zetPlaat(naam) {
     $("#paint-outline").innerHTML = KLEURPLATEN[naam];
@@ -2769,7 +2801,7 @@ scenes.kleuren = function (app) {
   let tekent = false, vx = 0, vy = 0;
   function pos(e) {
     const r = canvas.getBoundingClientRect();
-    return [e.clientX - r.left, e.clientY - r.top];
+    return [(e.clientX - r.left) * canvas.width / r.width, (e.clientY - r.top) * canvas.height / r.height];
   }
   canvas.addEventListener("pointerdown", e => {
     tekent = true;
@@ -3213,7 +3245,7 @@ function updateSoundBtn() {
 }
 $("#sound-btn").addEventListener("click", () => {
   soundOn = !soundOn;
-  localStorage.setItem("kh_sound", soundOn ? "aan" : "uit");
+  opslag.set("kh_sound", soundOn ? "aan" : "uit");
   updateSoundBtn();
   if (soundOn) { sfx.goed(); speak("Geluid staat weer aan!"); }
   else if ("speechSynthesis" in window) speechSynthesis.cancel();
@@ -4112,7 +4144,9 @@ function openRoom(room){
 document.getElementById('cardClose').onclick=()=>modal.classList.remove('open');
 document.getElementById('cardPlay').onclick=()=>{
   modal.classList.remove('open');
-  if(currentRoom&&window.KH)window.KH.launchGame(currentRoom.id);
+  if(!currentRoom)return;
+  if(window.KH)window.KH.launchGame(currentRoom.id);
+  else if(window.toonFout)window.toonFout('de spelletjes zijn niet geladen');
 };
 modal.addEventListener('pointerdown',e=>{if(e.target===modal)modal.classList.remove('open');});
 
