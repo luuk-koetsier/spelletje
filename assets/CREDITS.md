@@ -10,19 +10,18 @@ Vermelding is niet verplicht, maar we noemen de maker graag.
 De modellen zijn ongewijzigd van vorm. Ze zijn omgezet van glTF naar GLB
 en gecomprimeerd met `tools/optimize.sh` (gltf-transform, meshopt,
 texturen hooguit 1024 px als webp). De bestandsnaam begint met het pakket:
-`fur-` (Furniture Bits), `res-` (Restaurant Bits), `pro-` (Prototype Bits)
-en `city-` (City Builder Bits).
+`fur-` (Furniture Bits), `res-` (Restaurant Bits) en `pro-` (Prototype Bits).
+Alleen de modellen die een kamer echt gebruikt staan in de repo (27 stuks).
 
 | Pakket | Bron (GitHub) | Licentie | Modellen |
 |---|---|---|---|
-| KayKit : Furniture Bits 1.0 | https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0 | CC0 1.0 | armchair, armchair_pillows, bed_single_A, book_set, book_single, cabinet_medium, cabinet_medium_decorated, cabinet_small, cabinet_small_decorated, cactus_small_A, chair_A, chair_C, chair_stool, couch_pillows, lamp_standing, lamp_table, pictureframe_large_A, pictureframe_large_B, pictureframe_small_A, pictureframe_small_B, pictureframe_small_C, pictureframe_standing_A, pictureframe_standing_B, pillow_A, pillow_B, rug_oval_A, rug_oval_B, rug_rectangle_A, rug_rectangle_stripes_A, shelf_A_big, shelf_A_small, shelf_B_large, shelf_B_small_decorated, table_low, table_medium, table_medium_long |
-| KayKit : Restaurant Bits 1.0 | https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0 | CC0 1.0 | chair_stool, crate, crate_lid, jar_A_small, jar_B_small, jar_C_small, jar_D_small |
-| KayKit : Prototype Bits 1.0 | https://github.com/KayKit-Game-Assets/KayKit-Prototype-Bits-1.0 | CC0 1.0 | Barrel_A, Barrel_B, Box_B, Box_C, target |
-| KayKit : City Builder Bits 1.0 | https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0 | CC0 1.0 | bench, bush |
+| KayKit : Furniture Bits 1.0 | https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0 | CC0 1.0 | bed_single_A, book_single, cabinet_medium, cabinet_medium_decorated, cabinet_small, chair_A, chair_C, chair_stool, couch_pillows, pillow_A, pillow_B, rug_oval_A, rug_oval_B, rug_rectangle_stripes_A, shelf_A_big, shelf_B_large, table_low, table_medium, table_medium_long |
+| KayKit : Restaurant Bits 1.0 | https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0 | CC0 1.0 | chair_stool, crate, crate_lid, jar_A_small, jar_B_small, jar_C_small |
+| KayKit : Prototype Bits 1.0 | https://github.com/KayKit-Game-Assets/KayKit-Prototype-Bits-1.0 | CC0 1.0 | Box_B, Box_C |
 
 ## Code van derden
 
 | Bestand | Bron | Licentie |
 |---|---|---|
-| `vendor/three/` | three.js r184 (npm `three@0.184.0`) | MIT |
-| `vendor/three/examples/jsm/libs/meshopt_decoder.module.js` | meshoptimizer, via `three@0.184.0` | MIT |
+| `vendor/three/` | three.js r184 (npm `three@0.184.0`) | MIT, zie `vendor/three/LICENSE` (Copyright © 2010-2026 three.js authors) |
+| `vendor/three/examples/jsm/libs/meshopt_decoder.module.js` | meshoptimizer 1.1, via `three@0.184.0` | MIT (Copyright (C) 2016-2026 Arseny Kapoulkine, https://github.com/zeux/meshoptimizer); de licentievermelding staat bovenaan het bestand |

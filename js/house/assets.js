@@ -60,17 +60,17 @@ export async function preload(names) {
   await Promise.all(names.map(n => loadModel(n)));
 }
 
-// Geselecteerde modellen (KayKit, CC0, zie assets/CREDITS.md), per kamer of plek.
-// Stap B laadt ze allemaal vooraf; het plaatsen gebeurt in de inrichters per kamer.
+// Geselecteerde modellen (KayKit, CC0, zie assets/CREDITS.md), per kamer: alleen wat de inrichter
+// in rooms/<id>.js echt neerzet. Stap B laadt ze allemaal vooraf; het plaatsen gebeurt in de inrichters.
+// (De speelkamer en de tuin zijn helemaal in code gebouwd.) De smoke-test controleert dat elk bestand
+// in assets/models hier gebruikt wordt.
 export const MODEL_SETS = {
-  memory:    ['fur-table-low', 'fur-pillow-a', 'fur-pillow-b', 'fur-cabinet-medium-decorated', 'fur-book-set', 'fur-rug-oval-a'],
-  puzzel:    ['fur-rug-rectangle-stripes-a', 'fur-shelf-b-large', 'fur-armchair-pillows', 'res-crate', 'res-crate-lid', 'pro-box-b', 'pro-box-c'],
-  vormen:    ['fur-table-medium', 'fur-chair-a', 'fur-chair-c', 'fur-pictureframe-large-b', 'fur-cabinet-small'],
-  tellen:    ['fur-couch-pillows', 'fur-cabinet-medium', 'fur-rug-rectangle-a', 'fur-lamp-standing', 'fur-cactus-small-a'],
-  kleuren:   ['res-jar-a-small', 'res-jar-b-small', 'res-jar-c-small', 'res-jar-d-small', 'res-chair-stool', 'fur-pictureframe-standing-a', 'fur-table-medium-long', 'fur-shelf-a-small'],
-  verkleden: ['fur-pictureframe-large-a', 'fur-shelf-a-big', 'fur-cabinet-small-decorated', 'fur-chair-stool', 'fur-armchair', 'fur-pictureframe-standing-b'],
-  speel:     ['pro-barrel-a', 'pro-barrel-b', 'pro-target'],
-  stickers:  ['fur-bed-single-a', 'fur-lamp-table', 'fur-book-single', 'fur-pictureframe-small-a', 'fur-pictureframe-small-b', 'fur-pictureframe-small-c', 'fur-rug-oval-b', 'fur-shelf-b-small-decorated'],
-  tuin:      ['city-bush', 'city-bench'],
+  memory:    ['fur-rug-oval-a', 'fur-table-low', 'fur-pillow-a', 'fur-pillow-b', 'fur-cabinet-medium-decorated'],
+  puzzel:    ['fur-rug-rectangle-stripes-a', 'res-crate', 'res-crate-lid', 'fur-shelf-b-large', 'pro-box-b', 'pro-box-c'],
+  vormen:    ['fur-table-medium', 'fur-chair-a', 'fur-chair-c', 'fur-cabinet-small'],
+  tellen:    ['fur-couch-pillows', 'fur-cabinet-medium'],
+  kleuren:   ['fur-table-medium-long', 'res-jar-a-small', 'res-jar-b-small', 'res-jar-c-small', 'res-chair-stool'],
+  verkleden: ['fur-chair-stool', 'fur-shelf-a-big'],
+  stickers:  ['fur-bed-single-a', 'fur-rug-oval-b', 'fur-book-single'],
 };
 export const MODELS = [...new Set(Object.values(MODEL_SETS).flat())];
