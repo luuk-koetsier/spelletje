@@ -14,9 +14,20 @@ export function mat(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx
   return new THREE.Matrix4().compose(V.set(x, y, z), Q.setFromEuler(E.set(rx, ry, rz)), S.set(sx, sy, sz));
 }
 
+// Plaatsing voor een staafje (een geometrie langs de y-as, met hoogte 1) van punt a naar punt b.
+// Geeft [matrix, lengte]; maak de geometrie met hoogte 1, de matrix rekt hem op tot de lengte.
+const UP = new THREE.Vector3(0, 1, 0);
+export function along(a, b) {
+  const pa = new THREE.Vector3(...a), d = new THREE.Vector3(...b).sub(pa), len = d.length();
+  const m = new THREE.Matrix4().compose(pa.addScaledVector(d, 0.5), new THREE.Quaternion().setFromUnitVectors(UP, d.normalize()), new THREE.Vector3(1, len, 1));
+  return [m, len];
+}
+
 // Twee gedeelde materialen voor alle zelfgebouwde spullen: glanzend speelgoedplastic en mat (stof, krijtbord).
 export const toyVC = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0 });
 export const softVC = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0 });
+// Warme lampjes: één gedeeld gloeiend materiaal (emissief), zodat alle lampjes van een kamer één draw call zijn.
+export const glowMat = new THREE.MeshStandardMaterial({ color: '#FFF4D6', emissive: '#FFC870', emissiveIntensity: 1.15, roughness: 0.4, metalness: 0 });
 
 // Een onderdeel zonder index, met alleen positie, normaal en één vertex-kleur.
 export function vc(geo, hex, m) {
@@ -57,7 +68,7 @@ const SIT_H = 0.98;
 
 export function roomBuilder(slot, kit) {
   const group = slot.group;
-  const toyParts = [], softParts = [], blobs = [];
+  const toyParts = [], softParts = [], glowParts = [], blobs = [];
   const atlases = new Map();          // atlasnaam -> { material, geos, cast }
   const blobProto = kit.blobShadow(1, 0.32);
   const b = {
@@ -65,6 +76,8 @@ export function roomBuilder(slot, kit) {
     // zelfgebouwde onderdelen (geometrie, kleur, plaatsing)
     toy(geo, hex, m) { toyParts.push(vc(geo, hex, m)); },
     soft(geo, hex, m) { softParts.push(vc(geo, hex, m)); },
+    // gloeiend lampje (warm wit, emissief)
+    glow(geo, m) { glowParts.push(vc(geo, '#FFFFFF', m)); },
     // schaduwvlekje op de vloer (ellips rx bij rz)
     blob(x, z, rx, rz = rx, y = 0.006) { blobs.push(mat(x, y, z, 0, 0, 0, rx, 1, rz)); },
     // Een KayKit-model op de kamervloer. Geeft false als het model er niet is (niet geladen).
@@ -104,6 +117,8 @@ export function roomBuilder(slot, kit) {
       for (const [key, a] of atlases) add(a.geos, a.material, { cast: a.cast, name: slot.id + '-model-' + key });
       add(toyParts, toyVC, { name: slot.id + '-toy' });
       add(softParts, softVC, { name: slot.id + '-soft' });
+      const gl = add(glowParts, glowMat, { name: slot.id + '-glow' });
+      if (gl) gl.receiveShadow = false;
       if (blobs.length) {
         const sh = add(blobs.map(m => blobProto.geometry.clone().applyMatrix4(m)), blobProto.material, { name: slot.id + '-blobs' });
         sh.receiveShadow = false; sh.renderOrder = 1;

@@ -6,6 +6,10 @@ import { furnish as memory } from './memory.js';
 import { furnish as puzzel } from './puzzel.js';
 import { furnish as vormen } from './vormen.js';
 import { furnish as tellen } from './tellen.js';
+import { furnish as kleuren } from './kleuren.js';
+import { furnish as verkleden } from './verkleden.js';
+import { furnish as speel } from './speel.js';
+import { furnish as stickers } from './stickers.js';
 
 export const ROOMS = [
   { name: 'Memory',     id: 'memory',    icon: 'memory',  color: PAL.room.memory },
@@ -18,11 +22,8 @@ export const ROOMS = [
   { name: 'Stickers',   id: 'stickers',  icon: 'sticker', color: PAL.room.stickers },
 ];
 
-// Eén inrichter per kamer-id, uit rooms/<id>.js. De andere vier kamers volgen in Taak 8.
-const FURNISHERS = { memory, puzzel, vormen, tellen };
-
-// Heeft deze kamer een eigen inrichter? Die zet dan ook de bewoner-kat neer.
-export const hasFurnisher = id => !!FURNISHERS[id];
+// Eén inrichter per kamer-id, uit rooms/<id>.js. Elke inrichter zet ook de bewoner-kat neer.
+const FURNISHERS = { memory, puzzel, vormen, tellen, kleuren, verkleden, speel, stickers };
 
 // Richt elke plek in met de inrichter van die kamer, als die bestaat.
 // Een inrichter die faalt, breekt de andere kamers en het huis niet.

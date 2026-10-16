@@ -11,7 +11,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { PAL, toy, soft, blobShadow, shade } from './style.js';
 import { buildShell } from './shell.js';
 import { makeCat, reactCat, updateCats } from './cats.js';
-import { furnishRooms, hasFurnisher } from './rooms/index.js';
+import { furnishRooms } from './rooms/index.js';
 import { initialTier, applyTier, createGovernor } from './quality.js';
 
 // Alle kleuren komen uit het pastelpalet in style.js.
@@ -90,16 +90,8 @@ const roomObjs=shell.slots.map(s=>{
 
 // ─────────── katten: één stijl, elf stuks (cats.js)
 // Acht bewoners (één per kamer, met een accessoire dat bij de kamer past), Mauwtje bij de deur
-// en twee katten in de tuin. Een kamer met een eigen inrichter (rooms/<id>.js) zet zijn bewoner
-// zelf neer, via kit.makeCat in stap B. De andere bewoners staan voorlopig op de vloer naast het
-// kamermidden (Taak 8 zet ze op hun plek).
-const RESIDENTS={
-  kleuren:  {fur:'#FFFFFF',belly:'#FFE6EF',pose:'play',accessory:'brush'},    // atelier
-  verkleden:{fur:'#F7B6CF',belly:'#FFF0F6',pose:'sit', accessory:'hat'},      // kleedkamer
-  speel:    {fur:'#B98A64',belly:'#F5E4CF',pose:'play',accessory:'crown'},    // mini-circus
-  stickers: {fur:'#A9B1BE',belly:'#F1F3F6',pose:'loaf',accessory:'none'},     // slaapkamertje
-};
-const SIT_H=0.98;                                   // hoogte van een zittende kat in cats.js (met oren)
+// en twee katten in de tuin. Elke kamer zet zijn bewoner zelf neer (rooms/<id>.js), via
+// kit.makeCat in stap B.
 const catHits=[];
 function placeCat(spec,pos,scale,roty){
   const c=makeCat(spec);c.position.copy(pos);c.scale.setScalar(scale);c.rotation.y=roty||0;
@@ -112,9 +104,6 @@ function residentCat(spec){
   if(spec.room){c.userData.room=spec.room;h.userData.catRoom=spec.room;}
   hitboxes.unshift(h);return c;
 }
-for(const s of shell.slots){const r=RESIDENTS[s.id];if(!r||hasFurnisher(s.id))continue;
-  const c=placeCat({id:s.id,...r},new THREE.Vector3(s.center.x-0.62,s.floorY,s.center.z),s.size.y*0.45/SIT_H,0.2);
-  c.userData.room=s.id;c.userData.hit.userData.catRoom=s.id;}
 placeCat({id:'mauwtje',fur:'#FFB35C',belly:'#FFD9A8',pose:'sit',accessory:'none'},anchors.mauwtje,0.95,0.15);
 placeCat({id:'tuin1',fur:'#E3DCD6',belly:'#FFFFFF',pose:'play',accessory:'none'},new THREE.Vector3(-3.5,-0.2,2.3),0.8,0.5);
 placeCat({id:'tuin2',fur:'#6E6672',belly:'#EDE8EE',pose:'stand',accessory:'none'},new THREE.Vector3(3.15,-0.2,2.85),0.8,-0.5);
@@ -518,6 +507,8 @@ if(DEBUG){
     // (headless rendert te traag om daarop te wachten).
     home(){this.settle();resetCam=0;controls.target.copy(TARGET);camera.position.copy(camEnd);controls.update();},
     settle(){for(let i=0;i<300;i++)controls.update();},
+    // Lampen in de scène: aantal PointLights en aantal lampen dat schaduw werpt.
+    lights(){let point=0,shadow=0;scene.traverse(o=>{if(!o.isLight)return;if(o.isPointLight)point++;if(o.castShadow)shadow++;});return {point,shadow};},
     stageB:'pending',
     assets(){return assetInfo();},
   };

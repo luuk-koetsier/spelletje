@@ -221,6 +221,12 @@ const ACC = {
     vc(new THREE.CapsuleGeometry(0.045, 0.13, 3, 8), '#FF8E8E', mat(0.1, -0.1, 0.2, 0.25, 0, 0.25)),
     vc(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 10), '#FFFFFF', mat(0.125, -0.2, 0.225, 0.25, 0, 0.25)),
   ].map(g => g.applyMatrix4(P.neck)),
+  // slaapmuts met een pompon die opzij hangt (slaapkamertje)
+  nightcap: P => [
+    vc(new THREE.TorusGeometry(0.15, 0.035, 6, 20), '#FFFFFF', mat(0, 0, 0, Math.PI / 2)),
+    vc(new THREE.ConeGeometry(0.15, 0.3, 14), '#8FB8F0', mat(0.06, 0.12, 0, 0, 0, -0.55)),
+    vc(new THREE.SphereGeometry(0.045, 10, 8), '#FFFFFF', mat(0.15, 0.26, 0)),
+  ].map(g => g.applyMatrix4(mat(0, 0.26, -0.02, -0.15, 0, 0.1)).applyMatrix4(P.head)),
   // penseel met paarse verf (atelier)
   brush: P => [
     vc(new THREE.CylinderGeometry(0.018, 0.022, 0.26, 8), PAL.wood, mat(0, 0.13, 0)),

@@ -1,7 +1,7 @@
 import { open, waitReady } from './common.mjs';
 
 const IDS = ['memory', 'puzzel', 'vormen', 'tellen', 'kleuren', 'verkleden', 'speel', 'stickers'];
-const FURNISHED = ['memory', 'puzzel', 'vormen', 'tellen'];
+const FURNISHED = IDS;
 let browser;
 
 async function fail(msg) {
@@ -46,6 +46,13 @@ try {
     check(k.calls >= 6, 'kamer ' + id + ' lijkt niet ingericht (' + k.calls + ' calls)');
     check(k.calls <= 12, 'kamer ' + id + ' kost ' + k.calls + ' draw calls, verwacht hooguit 12');
   }
+
+  // Lampen: hooguit twee PointLights in het hele huis, en hooguit één lamp met schaduw.
+  const li = await page.evaluate(() => window.__house.lights ? window.__house.lights() : null);
+  check(li, '__house.lights ontbreekt');
+  console.log('lampen: ' + li.point + ' PointLights, ' + li.shadow + ' met schaduw');
+  check(li.point <= 2, li.point + ' PointLights, verwacht hooguit 2');
+  check(li.shadow <= 1, li.shadow + ' lampen met schaduw, verwacht hooguit 1');
 
   // ?q=low geeft de lage stand, en quality.js levert die ook.
   const q = await page.evaluate(async () => {
