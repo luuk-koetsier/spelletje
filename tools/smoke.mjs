@@ -118,38 +118,57 @@ try {
   check(errors.length === 0, errors[0]);
   await browser.close();
 
-  // Staand op een telefoon (390x844): het hele huis past, elk kamertikvlak is minstens 70x70 px,
-  // en de voordeur is via de ankerpunten van de huisvorm aan te tikken.
-  {
-    const W = 390, H = 844, MIN = 70;
+  // Staand op een telefoon (390x844 en 360x780): het hele huis past, elk kamertikvlak is minstens
+  // 70x70 px, en de voordeur is via de ankerpunten van de huisvorm aan te tikken.
+  async function phone(W, H) {
+    const MIN = 70, tag = 'telefoon ' + W + 'x' + H;
     const ph = await open({ width: W, height: H });
     browser = ph.browser;
     const pp = ph.page;
     try { await waitReady(pp, 60000); }
-    catch { await fail('telefoon: __house.ready niet binnen 60 s' + (ph.errors.length ? ' (' + ph.errors[0] + ')' : '')); }
+    catch { await fail(tag + ': __house.ready niet binnen 60 s' + (ph.errors.length ? ' (' + ph.errors[0] + ')' : '')); }
     const hb = await pp.evaluate(() => window.__house.bounds());
-    console.log('telefoon: huis op scherm ' + JSON.stringify(hb));
-    check(hb.x0 >= 0 && hb.y0 >= 0 && hb.x1 <= W && hb.y1 <= H, 'telefoon: het huis past niet in beeld: ' + JSON.stringify(hb));
+    console.log(tag + ': huis op scherm ' + JSON.stringify(hb) + ', vult ' + Math.round((hb.y1 - hb.y0) / H * 100) + '% van de hoogte');
+    check(hb.x0 >= 0 && hb.y0 >= 0 && hb.x1 <= W && hb.y1 <= H, tag + ': het huis past niet in beeld: ' + JSON.stringify(hb));
     const prs = await pp.evaluate(() => window.__house.rooms());
-    check(prs.length === 8, 'telefoon: rooms().length is ' + prs.length);
+    check(prs.length === 8, tag + ': rooms().length is ' + prs.length);
     for (const r of prs) {
-      check(r.x >= 0 && r.x <= W && r.y >= 0 && r.y <= H, 'telefoon: kamer ' + r.id + ' valt buiten beeld: ' + JSON.stringify(r));
-      check(r.w >= MIN && r.h >= MIN, 'telefoon: tikvlak ' + r.id + ' is ' + r.w + 'x' + r.h + ' px, verwacht minstens ' + MIN + 'x' + MIN);
+      check(r.x >= 0 && r.x <= W && r.y >= 0 && r.y <= H, tag + ': kamer ' + r.id + ' valt buiten beeld: ' + JSON.stringify(r));
+      check(r.w >= MIN && r.h >= MIN, tag + ': tikvlak ' + r.id + ' is ' + r.w + 'x' + r.h + ' px, verwacht minstens ' + MIN + 'x' + MIN);
       await pp.evaluate(() => { window.__house.events.length = 0; document.getElementById('modal').classList.remove('open'); });
       await pp.evaluate(([x, y]) => window.__house.tap(x, y), [r.x, r.y]);
       const ev = await pp.evaluate(() => window.__house.events.slice());
-      check(ev.length === 1 && ev[0] === 'open:' + r.id, 'telefoon: tik op ' + r.id + ' gaf ' + JSON.stringify(ev));
+      check(ev.length === 1 && ev[0] === 'open:' + r.id, tag + ': tik op ' + r.id + ' gaf ' + JSON.stringify(ev));
     }
-    console.log('telefoon: kleinste tikvlak ' + Math.min(...prs.map(r => r.w)) + 'x' + Math.min(...prs.map(r => r.h)) + ' px');
+    console.log(tag + ': kleinste tikvlak ' + Math.min(...prs.map(r => r.w)) + 'x' + Math.min(...prs.map(r => r.h)) + ' px');
     const an = await pp.evaluate(() => window.__house.anchors && window.__house.anchors());
-    check(an && an.door, 'telefoon: __house.anchors().door ontbreekt');
+    check(an && an.door, tag + ': __house.anchors().door ontbreekt');
     for (const k of ['doorbell', 'clock', 'birdhouse', 'mailbox', 'flowerpot', 'mauwtje', 'doghouse', 'wateringcan', 'ball'])
-      check(an[k], 'telefoon: anker ' + k + ' ontbreekt');
+      check(an[k], tag + ': anker ' + k + ' ontbreekt');
     await pp.evaluate(() => { window.__house.events.length = 0; });
     await pp.evaluate(([x, y]) => window.__house.tap(x, y), [an.door.x, an.door.y]);
     const pdev = await pp.evaluate(() => window.__house.events.slice());
-    check(pdev.length === 1 && pdev[0] === 'door', 'telefoon: tik op de deur (anker) gaf ' + JSON.stringify(pdev));
-    check(ph.errors.length === 0, 'telefoon: ' + ph.errors[0]);
+    check(pdev.length === 1 && pdev[0] === 'door', tag + ': tik op de deur (anker) gaf ' + JSON.stringify(pdev));
+    check(ph.errors.length === 0, tag + ': ' + ph.errors[0]);
+    await browser.close();
+  }
+  await phone(390, 844);
+  await phone(360, 780);
+
+  // Draaien van liggend naar staand: de camera komt weer op passende afstand en het hele huis
+  // staat in beeld. Dit loopt door dezelfde code als zonder testmodus (geen sprong naar camEnd).
+  {
+    const rt = await open({ width: 844, height: 390 });
+    browser = rt.browser;
+    const rp = rt.page;
+    try { await waitReady(rp, 60000); }
+    catch { await fail('draaien: __house.ready niet binnen 60 s'); }
+    await rp.setViewportSize({ width: 390, height: 844 });
+    await rp.waitForTimeout(800);
+    const rb = await rp.evaluate(() => { window.__house.frame(); return window.__house.bounds(); });
+    console.log('draaien 844x390 -> 390x844: huis op scherm ' + JSON.stringify(rb));
+    check(rb.x0 >= 0 && rb.y0 >= 0 && rb.x1 <= 390 && rb.y1 <= 844, 'draaien: het huis past na liggend naar staand niet in beeld: ' + JSON.stringify(rb));
+    check(rt.errors.length === 0, 'draaien: ' + rt.errors[0]);
     await browser.close();
   }
 

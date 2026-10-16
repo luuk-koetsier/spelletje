@@ -318,7 +318,7 @@ export function buildShell(scene) {
       toyParts.push(prep(sph(), COL.cheek, mat(sgn * 2.4, HEAD_Y + 0.28, fz - 0.01, 0, 0, 0, 0.44, 0.3, 0.06)));
       toyParts.push(prep(new THREE.TorusGeometry(0.17, 0.04, 8, 16, Math.PI), COL.eye, mat(sgn * 0.17, HEAD_Y + 0.42, fz + 0.09, 0, 0, Math.PI)));
       for (const [dy, rz] of [[0.48, 0.1], [0.24, -0.06]]) {
-        toyParts.push(prep(new THREE.CapsuleGeometry(0.035, 1.5, 3, 6), COL.whisker, mat(sgn * 3.85, HEAD_Y + dy, fz + 0.04, 0, 0, Math.PI / 2 - sgn * rz)));
+        toyParts.push(prep(new THREE.CapsuleGeometry(0.035, 1.4, 3, 6), COL.whisker, mat(sgn * 3.9, HEAD_Y + dy, fz + 0.04, 0, 0, Math.PI / 2 - sgn * rz)));
       }
     }
     toyParts.push(prep(sph(), COL.muzzle, mat(0, HEAD_Y + 0.38, fz - 0.02, 0, 0, 0, 0.78, 0.44, 0.08)));
@@ -339,24 +339,26 @@ export function buildShell(scene) {
     toyParts.push(prep(new THREE.TubeGeometry(curve, 40, 0.3, 10, false), COL.body));
     toyParts.push(prep(new THREE.SphereGeometry(0.36, 16, 12), PAL.pink, mat(-3.2, 5.7, -1.8)));
   }
-  // Glijbaan: draait vanaf een platformpje bij de bovenste verdieping rond een paal naar het gras.
-  const top = floorY(ROWS - 1) + 0.12, wallX = bodyXAt(top), SR = 0.62, SX = wallX + SR + 0.28, SZ = -0.45;
+  // Glijbaan: start op een platformpje achter op de zijkant bij de bovenste verdieping, loopt langs
+  // de zijwand naar voren (langs alle drie verdiepingen) en komt voor het huis op het gras uit.
+  // Hij blijft dicht tegen het lijf, zodat het huis staand op een telefoon groot in beeld kan.
+  const top = floorY(ROWS - 1) + 0.12, wallX = bodyXAt(top), SZ0 = -1.2;
+  const along = (y, z) => new THREE.Vector3(bodyXAt(y) + 0.3, y, z);
   {
-    const pts = [], turns = 1.25, N = 36, yEnd = 0.75;
-    for (let i = 0; i <= N; i++) {
-      const t = i / N, th = Math.PI - t * turns * Math.PI * 2;
-      pts.push(new THREE.Vector3(SX + Math.cos(th) * SR, top - (top - yEnd) * t, SZ + Math.sin(th) * SR));
+    const curve = new THREE.CatmullRomCurve3([
+      along(top + 0.05, SZ0), along(4.2, -0.2), along(3.1, 0.75),
+      new THREE.Vector3(4.72, 2.0, 1.75), new THREE.Vector3(4.76, 1.0, 2.6),
+      new THREE.Vector3(4.8, 0.35, 3.25), new THREE.Vector3(4.82, 0.15, 3.75)]);
+    toyParts.push(prep(slideGeometry(curve, 80, 0.3, 0.07), COL.slide));
+    // pootjes onder het vrije stuk
+    for (const [z, y] of [[1.75, 2.0], [2.6, 1.0]]) {
+      const h = y - 0.3 - GROUND;
+      toyParts.push(prep(new THREE.CylinderGeometry(0.06, 0.07, h, 10), COL.pole, mat(z === 1.75 ? 4.72 : 4.76, GROUND + h / 2, z)));
     }
-    pts.push(new THREE.Vector3(SX + 0.3, 0.45, 0.6), new THREE.Vector3(SX + 0.2, 0.22, 1.25), new THREE.Vector3(SX + 0.1, 0.14, 1.85));
-    const curve = new THREE.CatmullRomCurve3(pts);
-    toyParts.push(prep(slideGeometry(curve, 84, 0.34, 0.08), COL.slide));
-    toyParts.push(prep(new THREE.CylinderGeometry(0.09, 0.09, top + 0.9 - GROUND, 12), COL.pole, mat(SX, (top + 0.9 + GROUND) / 2, SZ)));
-    toyParts.push(prep(new THREE.ConeGeometry(0.5, 0.55, 20), COL.hat, mat(SX, top + 1.15, SZ)));
-    toyParts.push(prep(new THREE.SphereGeometry(0.12, 12, 10), PAL.butter, mat(SX, top + 1.47, SZ)));
-    toyParts.push(prep(new RoundedBoxGeometry(0.8, 0.14, 0.95, 3, 0.06), COL.frame, mat(wallX + 0.3, top - 0.2, SZ)));
+    toyParts.push(prep(new RoundedBoxGeometry(0.75, 0.14, 0.8, 3, 0.06), COL.frame, mat(wallX + 0.3, top - 0.25, SZ0 - 0.05)));
     // zijdeurtje naar het platform
-    toyParts.push(prep(new RoundedBoxGeometry(0.14, 1.0, 0.72, 3, 0.06), COL.hat, mat(bodyXAt(top + 0.4) + 0.02, top + 0.4, SZ)));
-    toyParts.push(prep(new THREE.SphereGeometry(0.05, 10, 8), PAL.butter, mat(bodyXAt(top + 0.4) + 0.11, top + 0.35, SZ + 0.2)));
+    toyParts.push(prep(new RoundedBoxGeometry(0.14, 1.0, 0.62, 3, 0.06), COL.hat, mat(bodyXAt(top + 0.4) + 0.02, top + 0.4, SZ0 + 0.05)));
+    toyParts.push(prep(new THREE.SphereGeometry(0.05, 10, 8), PAL.butter, mat(bodyXAt(top + 0.4) + 0.11, top + 0.35, SZ0 + 0.22)));
   }
 
   // Binnenkant: vloeren, plafonds en tussenwanden.
@@ -450,9 +452,9 @@ export function buildShell(scene) {
     mauwtje: v(1.25, GROUND, 2.35),
     mailbox: v(1.9, GROUND, 5.7),
     doghouse: v(-4.8, GROUND, 3.2),
-    wateringcan: v(3.3, GROUND, 3.9),
+    wateringcan: v(3.0, GROUND, 4.4),
     ball: v(-2.3, GROUND, 4.6),
-    slide: v(SX + 0.1, GROUND, 2.15),
+    slide: v(4.82, GROUND, 4.0),
   };
 
   scene.add(group);

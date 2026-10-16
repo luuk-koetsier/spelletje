@@ -41,9 +41,9 @@ c.fillStyle=g;c.fillRect(0,0,8,256);const t=new THREE.CanvasTexture(cv);t.colorS
 const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,0.5,120); // near 0.5: genoeg diepteprecisie, de kamers liggen dicht achter de gevel
 // Camera: iets van rechtsvoor en een tikje van boven. De afstand past zich aan het scherm aan,
 // zodat het hele huis (met oren, snorharen en glijbaan) staand op een telefoon in beeld past.
-const TARGET=new THREE.Vector3(0.7,5.4,0);
-const CAM_DIR=new THREE.Vector3(0.24,0.2,1).normalize();
-const HOUSE_HALF={w:5.9,h:6.6};   // halve breedte en hoogte van het huis rond TARGET, met marge
+const TARGET=new THREE.Vector3(0.25,5.4,0);
+const CAM_DIR=new THREE.Vector3(0.2,0.18,1).normalize();
+const HOUSE_HALF={w:5.1,h:6.3};   // halve breedte (kop, kamers, glijbaan) en hoogte (sokkel tot oren) rond TARGET, met marge
 const camEnd=new THREE.Vector3();
 function fitCamera(){
   const tanV=Math.tan(THREE.MathUtils.degToRad(camera.fov/2)),aspect=innerWidth/innerHeight;
@@ -825,7 +825,18 @@ function animate(){
 }
 
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);
-  fitCamera();if(DEBUG){camera.position.copy(camEnd);controls.target.copy(TARGET);controls.update();}});
+  refitCamera();});
+// Na draaien of formaatwissel: zelfde kijkhoek houden, maar de afstand opnieuw passend maken,
+// zodat het huis na liggend naar staand weer helemaal in beeld staat (ook buiten de testmodus).
+function refitCamera(){
+  fitCamera();
+  if(introT<1)return; // de intro vliegt zelf naar camEnd
+  const off=camera.position.clone().sub(controls.target);
+  if(off.lengthSq()<1e-6)off.copy(CAM_DIR);
+  controls.target.copy(TARGET);
+  camera.position.copy(TARGET).addScaledVector(off.normalize(),camEnd.distanceTo(TARGET));
+  controls.update();
+}
 renderer.setSize(innerWidth,innerHeight);
 
 // bridge naar de 2D-spellen: pauzeer/hervat de 3D-render
@@ -862,9 +873,11 @@ if(DEBUG){
     anchors(){const out={};for(const [k,v] of Object.entries(anchors)){camera.updateMatrixWorld();const q=v.clone().project(camera);
       out[k]={x:Math.round((q.x+1)/2*innerWidth),y:Math.round((1-q.y)/2*innerHeight)};}return out;},
     // Schermrechthoek van de hele huisvorm (alle 8 hoeken van de omhullende doos).
-    bounds(){camera.updateMatrixWorld();const b=new THREE.Box3().setFromObject(house);let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
-      for(let i=0;i<8;i++){const v=new THREE.Vector3(i&1?b.max.x:b.min.x,i&2?b.max.y:b.min.y,i&4?b.max.z:b.min.z).project(camera);
-        const sx=(v.x+1)/2*innerWidth,sy=(1-v.y)/2*innerHeight;x0=Math.min(x0,sx);x1=Math.max(x1,sx);y0=Math.min(y0,sy);y1=Math.max(y1,sy);}
+    // Schermrechthoek van de zichtbare huisvorm: elk hoekpunt van elke zichtbare mesh geprojecteerd.
+    bounds(){camera.updateMatrixWorld();house.updateMatrixWorld(true);let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;const v=new THREE.Vector3();
+      house.traverse(o=>{if(!o.isMesh||!o.visible)return;const pos=o.geometry.attributes.position;
+        for(let i=0;i<pos.count;i++){v.fromBufferAttribute(pos,i).applyMatrix4(o.matrixWorld).project(camera);
+          const sx=(v.x+1)/2*innerWidth,sy=(1-v.y)/2*innerHeight;if(sx<x0)x0=sx;if(sx>x1)x1=sx;if(sy<y0)y0=sy;if(sy>y1)y1=sy;}});
       return {x0:Math.round(x0),y0:Math.round(y0),x1:Math.round(x1),y1:Math.round(y1)};},
     tap(x,y){fire('pointerdown',x,y,1);fire('pointerup',x,y,0);},
     drag(x0,y0,x1,y1){fire('pointerdown',x0,y0,1);
