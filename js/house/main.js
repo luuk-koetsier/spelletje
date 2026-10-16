@@ -1,12 +1,10 @@
 /* ============================================================
-   HET HUIS VAN SEP: 3D (Three.js)
-   Ontwerp exact overgenomen uit de design-handoff.
-   Kamers openen een modal; "Spelen!" start het bijbehorende 2D-spel
-   via window.KH.launchGame(id).
+   HET HUIS VAN SEP: 3D home screen (Three.js)
+   Bouwt de scene, camera en renderloop. Kamers openen een modal;
+   "Spelen!" start het bijbehorende 2D-spel via window.KH.launchGame(id).
    ============================================================ */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { PAL, toy, soft, blobShadow, shade } from './style.js';
 import { buildShell, blinkAt } from './shell.js';
@@ -20,13 +18,14 @@ import { attachInput } from './input.js';
 // Alle kleuren komen uit het pastelpalet in style.js.
 const COL=PAL;
 
-// Kamericonen staan in icons.js; de kleurhulp shade() in style.js.
+// De kamericonen op het canvas staan in icons.js; iconSVG hieronder is de SVG-kopie voor de modal.
 
 const qs=new URLSearchParams(location.search);
 const DEBUG=qs.get('debug')==='1';
 const dbgEvents=[];
+const dbg=e=>{if(DEBUG)dbgEvents.push(e);};
 const canvas=document.getElementById('scene');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:DEBUG});
 renderer.shadowMap.type=THREE.PCFShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.95;
 // Kwaliteit: high (schaduw, scherp) of low (pixelratio 1, geen schaduw). ?q=low forceert low.
@@ -122,7 +121,7 @@ const surprises=addSurprises(scene,anchors);
 let hovered=null,started=false,paused=false;
 const input=attachInput(canvas,camera,controls,{rooms:roomHits,door:doorHit,surprises,cats:catGroups},{
   openRoom,
-  door(){dbgEvents.push('door');bounceDoor();meow();},
+  door(){dbg('door');bounceDoor();meow();},
   surprise:tapSurprise,
   cat:tapCat,
 },{
@@ -133,14 +132,14 @@ const input=attachInput(canvas,camera,controls,{rooms:roomHits,door:doorHit,surp
 
 let doorBounce=0;function bounceDoor(){doorBounce=1;}
 // Tik op een verrassing: logt surprise:<id> en start de reactie (surprises.js).
-function tapSurprise(s){dbgEvents.push('surprise:'+s.id);s.react();}
+function tapSurprise(s){dbg('surprise:'+s.id);s.react();}
 // Tik op een kat: sprongetje en miauw. Een kat die ook een verrassing is (Mauwtje) reageert als verrassing.
-function tapCat(c){const s=surprises.find(q=>q.object===c);if(s)return tapSurprise(s);dbgEvents.push('cat:'+c.userData.catId);reactCat(c);}
+function tapCat(c){const s=surprises.find(q=>q.object===c);if(s)return tapSurprise(s);dbg('cat:'+c.userData.catId);reactCat(c);}
 
 const modal=document.getElementById('modal');
 let currentRoom=null;
 function openRoom(room){
-  currentRoom=room;dbgEvents.push('open:'+room.id);
+  currentRoom=room;dbg('open:'+room.id);
   document.getElementById('cardTitle').textContent=room.name;
   document.getElementById('cardText').textContent=roomBlurb(room.name);
   const em=document.getElementById('cardEmoji');em.style.background=room.color;

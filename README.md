@@ -11,7 +11,7 @@ Open `index.html` via een webserver (of gewoon op Vercel). Het startscherm is
 een **3D-poppenhuis in de vorm van een kat**: een lila kop met oren, ogen die af
 en toe knipperen en snorharen, en daaronder een roze lijf met acht kamers, een
 voordeur en een glijbaan. Sleep met de muis of vinger om het huis rond te
-draaien; staat het een tijdje stil, dan draait het vanzelf langzaam. Tik op een
+draaien. In het begin draait het huis vanzelf langzaam rond. Tik op een
 kamer: er verschijnt een kaartje met **Spelen!**, en dat start het spelletje
 van die kamer. Werkt met muis en touch, staand en liggend.
 
