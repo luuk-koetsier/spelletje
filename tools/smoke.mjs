@@ -110,6 +110,17 @@ try {
   await reset();
   await page.evaluate(([x, y]) => window.__house.drag(x, y, x + 120, y), [mauw.x, mauw.y]);
   check((await events()).length === 0, 'slepen vanaf Mauwtje logde iets');
+  // Tuin (Taak 10): flyers in de lucht, het hondenhok op zijn anker, bloemen lager dan een zittende kat,
+  // en de hele tuin hooguit 25 draw calls. De tik op de verrassingen 'lucht' en 'hond' komt met Taak 9.
+  const gd = await page.evaluate(() => window.__house.garden && window.__house.garden());
+  check(gd, '__house.garden() ontbreekt');
+  console.log('tuin: ' + gd.calls + ' draw calls, ' + gd.triangles + ' driehoeken, ' + gd.flyers.length + ' flyers, bloem tot ' + gd.flowerTop.toFixed(2));
+  check(gd.flyers.length >= 1 && gd.flyers.every(f => f.inScene), 'flyers ontbreken of hangen niet in de scène: ' + JSON.stringify(gd.flyers));
+  check(gd.flyers.some(f => f.x >= 0 && f.x <= 1280 && f.y >= 0 && f.y <= 800), 'geen flyer in beeld: ' + JSON.stringify(gd.flyers));
+  check(Math.hypot(gd.doghouse.x - gd.doghouseAnchor.x, gd.doghouse.y - gd.doghouseAnchor.y, gd.doghouse.z - gd.doghouseAnchor.z) < 1e-6,
+    'hondenhok staat niet op anchors.doghouse: ' + JSON.stringify(gd));
+  check(gd.calls <= 25, 'de tuin kost ' + gd.calls + ' draw calls, verwacht hooguit 25');
+  check(gd.flowerTop < mauw.top, 'bloemen (tot ' + gd.flowerTop.toFixed(2) + ') zijn niet lager dan een zittende kat (' + mauw.top.toFixed(2) + ')');
   // Camera terug naar de startstand, zodat de tests hierna dezelfde kijkhoek hebben als voorheen.
   await page.evaluate(() => document.getElementById('homeBtn').click());
   await page.waitForTimeout(1500);
@@ -197,6 +208,10 @@ try {
       const want = c.id === 'mauwtje' ? 'surprise:mauwtje' : 'cat:' + c.id;
       check(ev.length === 1 && ev[0] === want, tag + ': tik op kat ' + c.id + ' gaf ' + JSON.stringify(ev));
     }
+    // Tuin: minstens één flyer staat staand op de telefoon in beeld.
+    const pg = await pp.evaluate(() => window.__house.garden());
+    check(pg.flyers.some(f => f.x >= 0 && f.x <= W && f.y >= 0 && f.y <= H), tag + ': geen flyer in beeld: ' + JSON.stringify(pg.flyers));
+    console.log(tag + ': tuin ' + pg.calls + ' draw calls, flyers in beeld ' + pg.flyers.filter(f => f.x >= 0 && f.x <= W && f.y >= 0 && f.y <= H).length + '/' + pg.flyers.length);
     await pp.evaluate(() => { window.__house.events.length = 0; });
     await pp.evaluate(([x, y]) => window.__house.tap(x, y), [an.door.x, an.door.y]);
     const pdev = await pp.evaluate(() => window.__house.events.slice());
