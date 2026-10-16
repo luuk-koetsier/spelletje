@@ -449,7 +449,7 @@ export function buildShell(scene) {
     clock: v(0, HEAD_Y + 1.9, FRONT + 0.02),
     birdhouse: v(0, HEAD_Y + HEAD_RY + 0.15, 0.1),
     flowerpot: v(-0.95, 0.3, 1.42),
-    mauwtje: v(1.25, GROUND, 2.35),
+    mauwtje: v(2.0, GROUND, 2.45),
     mailbox: v(1.9, GROUND, 5.7),
     doghouse: v(-4.8, GROUND, 3.2),
     wateringcan: v(3.0, GROUND, 4.4),

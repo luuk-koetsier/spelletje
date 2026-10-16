@@ -73,6 +73,47 @@ try {
   const dev = await events();
   check(dev.length === 1 && dev[0] === 'door', 'tik op de voordeur gaf ' + JSON.stringify(dev));
 
+  // Katten: elf in één stijl (acht bewoners, Mauwtje en twee tuinkatten).
+  const cats = await page.evaluate(() => window.__house.cats && window.__house.cats());
+  check(Array.isArray(cats), '__house.cats() ontbreekt');
+  check(cats.length === 11, 'aantal objecten met userData.catId is ' + cats.length + ', verwacht 11');
+  const catIds = cats.map(c => c.id).sort();
+  check(JSON.stringify(catIds) === JSON.stringify([...IDS, 'mauwtje', 'tuin1', 'tuin2'].sort()), 'kat-ids kloppen niet: ' + catIds.join(','));
+  const mauw = cats.find(c => c.id === 'mauwtje');
+  const doorBox = await page.evaluate(() => window.__house.doorBox());
+  console.log('mauwtje: bovenkant ' + mauw.top.toFixed(2) + ', deur: bovenkant ' + doorBox.top.toFixed(2));
+  check(mauw.top < doorBox.top, 'Mauwtje (bovenkant ' + mauw.top.toFixed(2) + ') is niet lager dan de deur (' + doorBox.top.toFixed(2) + ')');
+  for (const c of cats.filter(c => c.room)) {
+    const k = c.height / c.roomH;
+    check(k > 0.25 && k < 0.55, 'bewoner ' + c.id + ' is ' + k.toFixed(2) + ' keer de kamerhoogte');
+  }
+  console.log('bewoners: ' + cats.filter(c => c.room).map(c => c.id + '=' + (c.height / c.roomH).toFixed(2)).join(' '));
+  // Een tik op elke kat geeft een sprongetje en logt cat:<id> (Mauwtje: surprise:mauwtje), ook in een kamer.
+  for (const c of cats) {
+    check(c.x >= 0 && c.x <= 1280 && c.y >= 0 && c.y <= 800, 'kat ' + c.id + ' valt buiten beeld: ' + JSON.stringify(c));
+    await reset();
+    await page.evaluate(([x, y]) => window.__house.tap(x, y), [c.x, c.y]);
+    const ev = await events();
+    const want = c.id === 'mauwtje' ? 'surprise:mauwtje' : 'cat:' + c.id;
+    check(ev.length === 1 && ev[0] === want, 'tik op kat ' + c.id + ' gaf ' + JSON.stringify(ev));
+  }
+  // Het sprongetje: na een tik komt Mauwtje los van de grond en daarna staat hij weer.
+  // (Headless rendert traag, dus wachten op de toestand in plaats van op een vaste tijd.)
+  await reset();
+  await page.evaluate(([x, y]) => window.__house.tap(x, y), [mauw.x, mauw.y]);
+  const jumpOf = () => window.__house.cats().find(c => c.id === 'mauwtje').jumpY;
+  await page.waitForFunction(`(${jumpOf})() > 0.05`, null, { timeout: 5000, polling: 'raf' })
+    .catch(() => { throw new Error('Mauwtje springt niet na een tik'); });
+  await page.waitForFunction(`(${jumpOf})() === 0`, null, { timeout: 8000, polling: 100 })
+    .catch(() => { throw new Error('Mauwtje landt niet na het sprongetje'); });
+  // Slepen vanaf een kat activeert niets.
+  await reset();
+  await page.evaluate(([x, y]) => window.__house.drag(x, y, x + 120, y), [mauw.x, mauw.y]);
+  check((await events()).length === 0, 'slepen vanaf Mauwtje logde iets');
+  // Camera terug naar de startstand, zodat de tests hierna dezelfde kijkhoek hebben als voorheen.
+  await page.evaluate(() => document.getElementById('homeBtn').click());
+  await page.waitForTimeout(1500);
+
   // Slepen (120 px) vanaf een kamermidden activeert niets.
   await reset();
   const r0 = rooms[0];
@@ -145,6 +186,17 @@ try {
     check(an && an.door, tag + ': __house.anchors().door ontbreekt');
     for (const k of ['doorbell', 'clock', 'birdhouse', 'mailbox', 'flowerpot', 'mauwtje', 'doghouse', 'wateringcan', 'ball'])
       check(an[k], tag + ': anker ' + k + ' ontbreekt');
+    // Elke kat staat in beeld en reageert op een tik.
+    const pcs = await pp.evaluate(() => window.__house.cats());
+    check(pcs.length === 11, tag + ': aantal katten is ' + pcs.length);
+    for (const c of pcs) {
+      check(c.x >= 0 && c.x <= W && c.y >= 0 && c.y <= H, tag + ': kat ' + c.id + ' valt buiten beeld: ' + JSON.stringify(c));
+      await pp.evaluate(() => { window.__house.events.length = 0; document.getElementById('modal').classList.remove('open'); });
+      await pp.evaluate(([x, y]) => window.__house.tap(x, y), [c.x, c.y]);
+      const ev = await pp.evaluate(() => window.__house.events.slice());
+      const want = c.id === 'mauwtje' ? 'surprise:mauwtje' : 'cat:' + c.id;
+      check(ev.length === 1 && ev[0] === want, tag + ': tik op kat ' + c.id + ' gaf ' + JSON.stringify(ev));
+    }
     await pp.evaluate(() => { window.__house.events.length = 0; });
     await pp.evaluate(([x, y]) => window.__house.tap(x, y), [an.door.x, an.door.y]);
     const pdev = await pp.evaluate(() => window.__house.events.slice());
