@@ -201,6 +201,12 @@ const ACC = {
     ...[-1, 1].map(sg => vc(new THREE.TorusGeometry(0.078, 0.014, 8, 24), '#7A5CC2', mat(sg * 0.135, 0.025, 0.29, 0, sg * 0.35, 0))),
     vc(new THREE.CylinderGeometry(0.011, 0.011, 0.11, 6), '#7A5CC2', mat(0, 0.045, 0.3, 0, 0, Math.PI / 2)),
   ].map(g => g.applyMatrix4(P.head)),
+  // duikbril met band rond de kop (aquariumkamer)
+  goggles: P => [
+    ...[-1, 1].map(sg => vc(new THREE.CylinderGeometry(0.074, 0.074, 0.02, 16).rotateX(Math.PI / 2), '#C8EEFF', mat(sg * 0.135, 0.03, 0.29, 0, sg * 0.35, 0))),
+    ...[-1, 1].map(sg => vc(new THREE.TorusGeometry(0.078, 0.02, 6, 18), '#4FA3E0', mat(sg * 0.135, 0.03, 0.295, 0, sg * 0.35, 0))),
+    vc(new THREE.TorusGeometry(0.3, 0.022, 6, 28), '#4FA3E0', mat(0, 0.04, 0, Math.PI / 2, 0, 0, 1.12, 1, 1)),
+  ].map(g => g.applyMatrix4(P.head)),
   // gouden kroontje (circus)
   crown: P => [
     vc(new THREE.CylinderGeometry(0.11, 0.1, 0.07, 20), '#FFC83D', mat(0, 0.035, 0)),

@@ -11,7 +11,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { PAL, toy, soft, blobShadow, shade } from './style.js';
 import { buildShell } from './shell.js';
 import { makeCat, reactCat, updateCats } from './cats.js';
-import { furnishRooms } from './rooms/index.js';
+import { furnishRooms, hasFurnisher } from './rooms/index.js';
 import { initialTier, applyTier, createGovernor } from './quality.js';
 
 // Alle kleuren komen uit het pastelpalet in style.js.
@@ -79,26 +79,21 @@ key.castShadow=gov.tier==='high';
 const shell=buildShell(scene);
 const house=shell.group, door=shell.door, anchors=shell.anchors;
 const hitboxes=[...shell.slots.map(s=>s.hit),shell.doorHit];
-// Oude kamermaat, alleen nog voor de oude inrichting hieronder (die verdwijnt in Taak 7).
-const COLW=2.3, FH=2.0, RD=1.9, T=0.16;
-// Per kamer een groep voor spulletjes. De oorsprong ligt zo dat de oude inrichting op de vloer
-// en tegen de achterwand van de nieuwe plek staat.
+// Per kamer een groep voor de inrichting (slot.group), met de oorsprong midden op de kamervloer.
+// De inrichters in rooms/ vullen die in stap B; bij hover schuift de groep iets naar voren.
 const roomObjs=shell.slots.map(s=>{
   const room=s.hit.userData.room;
-  const g=new THREE.Group();g.position.set(s.center.x,s.floorY+FH/2-T*0.6,s.center.z-s.size.z/2+RD/2-T*0.7);house.add(g);
-  s.hit.userData.group=g;
+  const g=new THREE.Group();g.name='room-'+s.id;g.position.set(s.center.x,s.floorY,s.center.z);house.add(g);
+  s.group=g;s.hit.userData.group=g;
   return {room,slot:s,group:g,baseZ:g.position.z,hover:0};
 });
 
 // ─────────── katten: één stijl, elf stuks (cats.js)
 // Acht bewoners (één per kamer, met een accessoire dat bij de kamer past), Mauwtje bij de deur
-// en twee katten in de tuin. De bewoners staan voorlopig op de vloer naast het kamermidden
-// (Taak 7 zet ze op hun plek); zo blijft het midden van de kamer vrij om de kamer te openen.
+// en twee katten in de tuin. Een kamer met een eigen inrichter (rooms/<id>.js) zet zijn bewoner
+// zelf neer, via kit.makeCat in stap B. De andere bewoners staan voorlopig op de vloer naast het
+// kamermidden (Taak 8 zet ze op hun plek).
 const RESIDENTS={
-  memory:   {fur:'#EADBC8',belly:'#FFF8EE',pose:'sit', accessory:'bow'},      // spelletjeskamer
-  puzzel:   {fur:'#F2C98A',belly:'#FFF4E0',pose:'sit', accessory:'scarf'},    // hobbyzolder
-  vormen:   {fur:'#C9B2F2',belly:'#F7F1FF',pose:'sit', accessory:'glasses'},  // klaslokaaltje
-  tellen:   {fur:'#4E4856',belly:'#ECE6F0',pose:'stand',accessory:'none'},    // aquariumkamer
   kleuren:  {fur:'#FFFFFF',belly:'#FFE6EF',pose:'play',accessory:'brush'},    // atelier
   verkleden:{fur:'#F7B6CF',belly:'#FFF0F6',pose:'sit', accessory:'hat'},      // kleedkamer
   speel:    {fur:'#B98A64',belly:'#F5E4CF',pose:'play',accessory:'crown'},    // mini-circus
@@ -110,7 +105,14 @@ function placeCat(spec,pos,scale,roty){
   const c=makeCat(spec);c.position.copy(pos);c.scale.setScalar(scale);c.rotation.y=roty||0;
   scene.add(c);catHits.push(c.userData.hit);return c;
 }
-for(const s of shell.slots){const r=RESIDENTS[s.id];if(!r)continue;
+// Voor de inrichters: een kat maken en zijn tikvlak meteen aanmelden. Met spec.room is het de
+// bewoner van die kamer (een tik op hem gaat dan voor de kamer zelf).
+function residentCat(spec){
+  const c=makeCat(spec),h=c.userData.hit;
+  if(spec.room){c.userData.room=spec.room;h.userData.catRoom=spec.room;}
+  hitboxes.unshift(h);return c;
+}
+for(const s of shell.slots){const r=RESIDENTS[s.id];if(!r||hasFurnisher(s.id))continue;
   const c=placeCat({id:s.id,...r},new THREE.Vector3(s.center.x-0.62,s.floorY,s.center.z),s.size.y*0.45/SIT_H,0.2);
   c.userData.room=s.id;c.userData.hit.userData.catRoom=s.id;}
 placeCat({id:'mauwtje',fur:'#FFB35C',belly:'#FFD9A8',pose:'sit',accessory:'none'},anchors.mauwtje,0.95,0.15);
@@ -235,138 +237,6 @@ function balloon(x,y,z,col){const b=new THREE.Group();
   b.position.set(x,y,z);b.userData.phase=Math.random()*7;scene.add(b);balloons.push(b);return b;}
 balloon(-7.5,4.5,3,COL.coral);balloon(-8.2,5.6,2,COL.yellow);balloon(7.8,4.8,3.2,COL.blue);balloon(8.4,6.0,2.4,COL.pink);
 
-(()=>{
-  const triS=(()=>{const s=new THREE.Shape();s.moveTo(-0.07,0);s.lineTo(0.07,0);s.lineTo(0,-0.17);s.closePath();return new THREE.ShapeGeometry(s);})();
-  for(const r of roomObjs){
-    const cu=new THREE.QuadraticBezierCurve3(
-      new THREE.Vector3(-COLW*0.36,FH*0.30,RD*0.18),
-      new THREE.Vector3(0,FH*0.19,RD*0.20),
-      new THREE.Vector3(COLW*0.36,FH*0.30,RD*0.18));
-    const ln=new THREE.Mesh(new THREE.TubeGeometry(cu,12,0.012,5,false),soft('#fff'));r.group.add(ln);
-    for(let i=0;i<4;i++){const pt=cu.getPoint(0.16+0.68*i/3);
-      const f=new THREE.Mesh(triS,new THREE.MeshStandardMaterial({color:i%2?'#ffffff':shade(r.room.color,-0.12),side:THREE.DoubleSide,roughness:0.85}));
-      f.position.copy(pt);r.group.add(f);}
-    const ball=new THREE.Mesh(new THREE.SphereGeometry(0.13,14,12),toy(shade(r.room.color,0.1)));
-    ball.position.set(-COLW*0.28,-FH/2+T*0.6+0.13,RD*0.2);ball.castShadow=true;r.group.add(ball);
-  }
-})();
-// ─────────── ingerichte kamers: een eigen thema met spulletjes per kamer
-(()=>{
-  const fy=-FH/2+T*0.6+0.02;                       // vloerhoogte binnen een kamer
-  const RB=(w,h,d,rad,col,gl)=>new THREE.Mesh(new RoundedBoxGeometry(w,h,d,3,rad),toy(col,{gloss:gl??0.5}));
-  const CY=(rt,rb,h,col,gl)=>new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,16),toy(col,{gloss:gl??0.5}));
-  const SP=(r,col,gl)=>new THREE.Mesh(new THREE.SphereGeometry(r,14,12),toy(col,{gloss:gl??0.5}));
-  const CO=(r,h,col,gl)=>new THREE.Mesh(new THREE.ConeGeometry(r,h,16),toy(col,{gloss:gl??0.5}));
-  const at=(g,m,x,y,z,ry)=>{m.position.set(x,fy+y,z);if(ry)m.rotation.y=ry;m.castShadow=true;m.receiveShadow=true;g.add(m);return m;};
-  // ── wanddecoratie: geschilderde mini-schilderijtjes (canvas-textuur) ──
-  const wallZ=-RD/2+T*0.7+0.02;
-  function star2(c,cx,cy,R){c.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rad=i%2?R*0.45:R;c.lineTo(cx+Math.cos(a)*rad,cy+Math.sin(a)*rad);}c.closePath();c.fill();}
-  function artTex(kind,bg){
-    const S=128,cv=document.createElement('canvas');cv.width=cv.height=S;const c=cv.getContext('2d');
-    c.fillStyle=bg;c.fillRect(0,0,S,S);c.lineCap='round';c.lineJoin='round';
-    if(kind==='cat'){c.fillStyle=COL.orange;c.beginPath();c.arc(64,74,32,0,7);c.fill();
-      c.beginPath();c.moveTo(40,54);c.lineTo(32,26);c.lineTo(58,48);c.fill();c.beginPath();c.moveTo(88,54);c.lineTo(96,26);c.lineTo(70,48);c.fill();
-      c.fillStyle='#2A2320';c.beginPath();c.arc(53,70,5,0,7);c.fill();c.beginPath();c.arc(75,70,5,0,7);c.fill();c.fillStyle=COL.pink;c.beginPath();c.arc(64,82,4,0,7);c.fill();}
-    else if(kind==='landscape'){c.fillStyle=COL.yellow;c.beginPath();c.arc(98,32,15,0,7);c.fill();
-      c.fillStyle=shade(COL.green,-0.08);c.beginPath();c.moveTo(0,128);c.quadraticCurveTo(50,86,128,128);c.fill();
-      c.fillStyle=COL.green;c.beginPath();c.moveTo(0,128);c.quadraticCurveTo(80,100,128,128);c.fill();}
-    else if(kind==='flower'){c.strokeStyle=COL.green;c.lineWidth=6;c.beginPath();c.moveTo(64,122);c.lineTo(64,64);c.stroke();
-      c.fillStyle=COL.coral;for(let i=0;i<6;i++){const a=i/6*Math.PI*2;c.beginPath();c.ellipse(64+Math.cos(a)*20,54+Math.sin(a)*20,11,11,0,0,7);c.fill();}
-      c.fillStyle=COL.yellow;c.beginPath();c.arc(64,54,12,0,7);c.fill();}
-    else if(kind==='rainbow'){[COL.coral,COL.orange,COL.yellow,COL.green,COL.blue].forEach((rc,i)=>{c.strokeStyle=rc;c.lineWidth=8;c.beginPath();c.arc(64,112,18+i*10,Math.PI,0);c.stroke();});}
-    else if(kind==='heart'){c.fillStyle=COL.pink;c.beginPath();c.moveTo(64,104);c.bezierCurveTo(6,62,30,18,64,50);c.bezierCurveTo(98,18,122,62,64,104);c.fill();}
-    else if(kind==='stars'){c.fillStyle=COL.yellow;star2(c,44,46,16);star2(c,88,64,12);star2(c,60,92,10);}
-    else if(kind==='balloon'){[[46,COL.coral],[82,COL.blue]].forEach(([x,col])=>{c.fillStyle=col;c.beginPath();c.ellipse(x,50,17,21,0,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=2;c.beginPath();c.moveTo(x,71);c.lineTo(64,120);c.stroke();});}
-    else {const cols=[COL.coral,COL.blue,COL.green,COL.yellow,COL.purple];for(let i=0;i<8;i++){c.fillStyle=cols[i%5];c.beginPath();c.arc(22+((i*37)%84),24+((i*53)%80),9+(i%3)*4,0,7);c.fill();}}
-    const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t;
-  }
-  function painting(g,x,yf,w,h,kind,bg){
-    at(g,RB(w+0.07,h+0.07,0.025,0.015,'#fff'),x,yf,wallZ);
-    const art=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:artTex(kind,bg),roughness:0.85}));
-    art.position.set(x,fy+yf,wallZ+0.016);g.add(art);
-  }
-  function plant(g,x,z){
-    at(g,CY(0.1,0.13,0.16,COL.coral),x,0.08,z);
-    at(g,SP(0.16,COL.green),x,0.26,z);at(g,SP(0.1,shade(COL.green,0.12)),x-0.08,0.32,z);at(g,SP(0.1,shade(COL.green,-0.06)),x+0.09,0.3,z);
-  }
-  function stool(g,x,z,col){
-    for(const [sx,sz] of [[-0.06,-0.06],[0.06,-0.06],[-0.06,0.06],[0.06,0.06]]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.014,0.014,0.16,6),toy(COL.wood));leg.position.set(x+sx,fy+0.08,z+sz);leg.castShadow=true;g.add(leg);}
-    at(g,CY(0.12,0.12,0.04,col),x,0.18,z);
-  }
-  const ART={Memory:['cat','stars'],Puzzel:['abstract','balloon'],Vormen:['abstract','rainbow'],Tellen:['landscape','stars'],Kleuren:['rainbow','flower'],Verkleden:['heart','stars'],Speelkamer:['balloon','cat'],Stickers:['stars','rainbow']};
-  const B={
-    Memory(g){ // speelkaart-tafeltje + dobbelsteen
-      at(g,CY(0.055,0.07,0.26,COL.wood),-0.58,0.13,-0.42);
-      at(g,CY(0.26,0.26,0.05,shade(COL.pink,0.14)),-0.58,0.28,-0.42);
-      at(g,RB(0.16,0.02,0.22,0.02,'#fff',0.8),-0.66,0.31,-0.42,0.3);
-      at(g,RB(0.16,0.02,0.22,0.02,'#fff',0.8),-0.5,0.31,-0.4,-0.25);
-      const die=at(g,RB(0.13,0.13,0.13,0.03,'#fff',0.8),-0.28,0.31,-0.3,0.4);
-      for(const [dx,dz] of [[0,0],[-0.035,-0.035],[0.035,0.035]]){const pip=SP(0.014,COL.pinkD);pip.position.set(die.position.x+dx,die.position.y+0.066,-0.24+dz);g.add(pip);}
-    },
-    Puzzel(g){ // speelgoedkist met blokken
-      at(g,RB(0.5,0.32,0.34,0.05,COL.woodD,0.3),-0.5,0.16,-0.4);
-      const lid=at(g,RB(0.52,0.06,0.36,0.04,shade(COL.woodD,0.12)),-0.5,0.34,-0.55);lid.rotation.x=-0.7;
-      [COL.coral,COL.blue,COL.green,COL.yellow].forEach((c,i)=>{const b=at(g,RB(0.13,0.13,0.13,0.03,c),-0.64+i*0.09,0.39+(i%2)*0.03,-0.32,0.3+i*0.2);});
-    },
-    Vormen(g){ // vormen-sorteerkubus + losse vorm
-      at(g,RB(0.42,0.34,0.34,0.05,shade(COL.coral,0.16)),-0.5,0.17,-0.4);
-      const circ=new THREE.Mesh(new THREE.CircleGeometry(0.06,18),toy(COL.yellow));circ.position.set(-0.63,fy+0.2,-0.223);g.add(circ);
-      const tri=new THREE.Mesh(new THREE.CircleGeometry(0.075,3),toy(COL.blue));tri.position.set(-0.5,fy+0.2,-0.223);g.add(tri);
-      const sq=new THREE.Mesh(new THREE.PlaneGeometry(0.1,0.1),toy(COL.green));sq.position.set(-0.37,fy+0.2,-0.223);g.add(sq);
-      const star=at(g,CO(0.09,0.14,COL.purple),-0.5,0.42,-0.4);star.rotation.set(0.25,0,0.1);
-      at(g,RB(0.12,0.12,0.12,0.02,COL.pink),-0.24,0.06,-0.3,0.5);
-    },
-    Tellen(g){ // telraam met kraaltjes
-      at(g,RB(0.52,0.4,0.07,0.04,COL.wood),-0.44,0.24,-0.42);
-      const bcols=[COL.coral,COL.yellow,COL.green,COL.blue,COL.purple];
-      for(let row=0;row<3;row++){const ry=0.12+row*0.12;
-        const rod=new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.44,6),toy('#fff',{gloss:0.8}));rod.rotation.z=Math.PI/2;rod.position.set(-0.44,fy+ry,-0.38);g.add(rod);
-        for(let bd=0;bd<5;bd++){const bead=SP(0.035,bcols[(bd+row)%5]);bead.position.set(-0.62+bd*0.09,fy+ry,-0.38);bead.castShadow=true;g.add(bead);}}
-    },
-    Kleuren(g){ // schildersezel + verfpotje
-      for(const s of [-1,1]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.5,8),toy(COL.wood));leg.position.set(-0.5+s*0.13,fy+0.25,-0.4);leg.rotation.z=s*0.14;leg.castShadow=true;g.add(leg);}
-      const back=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.5,8),toy(COL.wood));back.position.set(-0.5,fy+0.25,-0.47);back.rotation.x=0.24;g.add(back);
-      at(g,RB(0.3,0.26,0.03,0.01,'#fff'),-0.5,0.34,-0.36);
-      const blob=new THREE.Mesh(new THREE.CircleGeometry(0.06,14),toy(COL.pink));blob.position.set(-0.52,fy+0.36,-0.343);g.add(blob);
-      const blob2=new THREE.Mesh(new THREE.CircleGeometry(0.04,14),toy(COL.blue));blob2.position.set(-0.44,fy+0.3,-0.343);g.add(blob2);
-      at(g,CY(0.05,0.06,0.1,COL.green),-0.24,0.05,-0.32);
-    },
-    Verkleden(g){ // kledingrek met hangertjes + hoge hoed
-      for(const s of [-1,1]){const post=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.5,8),toy('#fff'));post.position.set(-0.5+s*0.24,fy+0.25,-0.42);post.castShadow=true;g.add(post);}
-      const bar=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.52,8),toy(COL.yellow,{gloss:0.8}));bar.rotation.z=Math.PI/2;bar.position.set(-0.5,fy+0.5,-0.42);g.add(bar);
-      for(const [dx,c] of [[-0.13,COL.coral],[0.11,COL.blue]]){
-        const hook=new THREE.Mesh(new THREE.TorusGeometry(0.028,0.006,6,12,Math.PI),toy('#ccc',{gloss:0.8}));hook.position.set(-0.5+dx,fy+0.5,-0.42);g.add(hook);
-        at(g,RB(0.16,0.22,0.05,0.03,c),-0.5+dx,0.36,-0.42);}
-      at(g,CY(0.14,0.14,0.03,'#26241f'),-0.16,0.02,-0.3);
-      at(g,CY(0.093,0.093,0.04,COL.pink),-0.16,0.06,-0.3);
-      at(g,CY(0.09,0.09,0.17,'#26241f'),-0.16,0.14,-0.3);
-    },
-    Speelkamer(g){ // trommel met stokjes + tol
-      at(g,CY(0.2,0.2,0.24,COL.coral),-0.5,0.14,-0.4);
-      for(const yy of [0.02,0.26]){const rim=new THREE.Mesh(new THREE.TorusGeometry(0.2,0.02,8,22),toy('#fff'));rim.rotation.x=Math.PI/2;rim.position.set(-0.5,fy+yy,-0.4);g.add(rim);}
-      for(const [dx,rz] of [[-0.06,0.5],[0.06,-0.5]]){const stick=new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,0.3,6),toy(COL.wood));stick.position.set(-0.5+dx,fy+0.36,-0.32);stick.rotation.z=rz;stick.castShadow=true;g.add(stick);const knob=SP(0.03,COL.wood);knob.position.set(-0.5+dx*2.6,fy+0.49,-0.32);g.add(knob);}
-      const top=at(g,CO(0.1,0.17,COL.blue),-0.2,0.11,-0.3);top.rotation.x=Math.PI;
-      at(g,CY(0.014,0.014,0.06,COL.yellow),-0.2,0.21,-0.3);
-    },
-    Stickers(g){ // wandplank met trofee + sterren
-      at(g,RB(0.72,0.04,0.16,0.02,'#fff'),0,0.56,-0.5);
-      for(const s of [-1,1]){const br=at(g,RB(0.03,0.12,0.12,0.01,'#fff'),s*0.3,0.5,-0.52);}
-      at(g,CY(0.07,0.09,0.05,COL.yellow,0.9),-0.26,0.62,-0.5);
-      at(g,CY(0.02,0.02,0.06,COL.yellow,0.9),-0.26,0.67,-0.5);
-      at(g,CY(0.11,0.06,0.11,COL.yellow,0.9),-0.26,0.75,-0.5);
-      for(const s of [-1,1]){const h=new THREE.Mesh(new THREE.TorusGeometry(0.045,0.012,6,12),toy(COL.yellow,{gloss:0.9}));h.position.set(-0.26+s*0.12,fy+0.75,-0.5);h.rotation.y=Math.PI/2;g.add(h);}
-      for(const [dx,c] of [[0.06,COL.coral],[0.2,COL.blue],[0.33,COL.green]]){const st=new THREE.Mesh(new THREE.OctahedronGeometry(0.05),toy(c));st.position.set(dx,fy+0.63,-0.5);st.castShadow=true;g.add(st);}
-    },
-  };
-  for(const r of roomObjs){
-    const b=B[r.room.name];if(b)b(r.group);
-    const [m1,m2]=ART[r.room.name]||['abstract','stars'];
-    painting(r.group,-0.72,1.12,0.34,0.28,m1,shade(r.room.color,0.32));
-    painting(r.group,0.72,1.0,0.32,0.26,m2,'#FFF7EE');
-    plant(r.group,0.82,0.5);
-    stool(r.group,-0.82,0.5,shade(r.room.color,0.1));
-  }
-})();
 (()=>{const mb=new THREE.Group();
   const post=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.08,1.0,8),soft(COL.woodD));post.position.y=0.5;post.castShadow=true;mb.add(post);
   const box=new THREE.Mesh(new RoundedBoxGeometry(0.42,0.34,0.62,3,0.1),toy(COL.blue));box.position.y=1.12;box.castShadow=true;mb.add(box);
@@ -598,14 +468,28 @@ if(DEBUG){
     // Alleen het deel dat op het scherm valt telt.
     x0=Math.max(0,x0);y0=Math.max(0,y0);x1=Math.min(innerWidth,x1);y1=Math.min(innerHeight,y1);
     return {w:Math.max(0,Math.round(x1-x0)),h:Math.max(0,Math.round(y1-y0))};};
+  // Schermpunt in elke kamer op diepte k: 0 is de kameropening, 1 de achterwand (op halve hoogte).
+  const fronts=(k)=>{house.updateMatrixWorld(true);return shell.slots.map(s=>{const o=new THREE.Object3D();
+      o.position.set(s.center.x,s.center.y,s.center.z+s.size.z*(0.5-k));house.add(o);const p=pt(o);house.remove(o);return {id:s.id,...p};});};
   const visBox=(root,skip)=>{const b=new THREE.Box3(),m=new THREE.Box3();
     root.traverse(o=>{if(o.isMesh&&o.visible&&o!==skip)b.union(m.setFromObject(o));});return b;};
   const fire=(type,x,y,buttons)=>canvas.dispatchEvent(new PointerEvent(type,{pointerId:1,pointerType:'touch',isPrimary:true,
     clientX:x,clientY:y,buttons,button:0,bubbles:true,cancelable:true}));
   window.__house={
     ready:false,events:dbgEvents,
-    info(){const i=renderer.info.render;return {calls:i.calls,triangles:i.triangles,tier:gov.tier};},
-    rooms(){return hitboxes.filter(h=>h.userData.room).map(h=>({id:h.userData.room.id,...pt(h),...rect(h)}));},
+    info(){const i=renderer.info.render;return {calls:i.calls,triangles:i.triangles,tier:gov.tier,azimuth:Math.round(THREE.MathUtils.radToDeg(controls.getAzimuthalAngle()))};},
+    // Per kamer: het midden van de kamer als schermpunt (daar tikt een kind) en de maat van het tikvlak.
+    rooms(){return hitboxes.filter(h=>h.userData.room).map(h=>{const id=h.userData.room.id;
+      return {id,...fronts(0.5).find(f=>f.id===id),...rect(h)};});},
+    // Schermpunt per kamer op diepte k (0: de kameropening, 0.5: het kamermidden, 1: de achterwand).
+    fronts(k=0){return fronts(k);},
+    // Verberg (of toon weer) de spullen en de bewoner van één kamer, om de draw calls per kamer te meten.
+    hideRoom(id,hide=true){const r=roomObjs.find(q=>q.slot.id===id);if(r)r.group.visible=!hide;},
+    // Camera dichtbij recht voor één kamer (iets van rechts en van boven), voor een close-up.
+    focusRoom(id){const s=shell.slots.find(q=>q.id===id);if(!s)return false;
+      const c=house.localToWorld(s.center.clone());resetCam=0;controls.minDistance=0;
+      const tanV=Math.tan(THREE.MathUtils.degToRad(camera.fov/2)),d=Math.max(1.5/(tanV*camera.aspect),1.25/tanV)+1.2;
+      controls.target.copy(c);camera.position.copy(c).addScaledVector(new THREE.Vector3(0.2,0.16,1).normalize(),d);controls.update();return true;},
     door(){return pt(hitboxes.find(h=>h.userData.doorHit));},
     // Wereldomhullende van de zichtbare delen (zonder schaduwvlekje en tikvlak).
     // Katten: id, tikpunt op het scherm, bovenkant en hoogte, en bij een bewoner de kamerhoogte.
@@ -630,6 +514,10 @@ if(DEBUG){
       for(let i=1;i<=6;i++)fire('pointermove',x0+(x1-x0)*i/6,y0+(y1-y0)*i/6,1);
       fire('pointerup',x1,y1,0);},
     frame(){camera.updateMatrixWorld();renderer.render(scene,camera);},
+    // Camera direct naar de startstand, en het uitdempen van een sleepbeweging direct afmaken
+    // (headless rendert te traag om daarop te wachten).
+    home(){this.settle();resetCam=0;controls.target.copy(TARGET);camera.position.copy(camEnd);controls.update();},
+    settle(){for(let i=0;i<300;i++)controls.update();},
     stageB:'pending',
     assets(){return assetInfo();},
   };
@@ -638,12 +526,12 @@ if(DEBUG){
 animate();
 if(DEBUG)window.__house.ready=true;
 // Stap B: de kamermodellen op de achtergrond laden. Wat niet laadt wordt overgeslagen.
-// Daarna richt furnishRooms de kamers in (vanaf Taak 7).
+// Daarna richt furnishRooms de kamers in, ook als er modellen ontbreken (die worden overgeslagen).
 // De laadcode zit in een losse import, zodat stap A er nooit op wacht of door breekt.
 let assetInfo=()=>null;
 import('./assets.js').then(a=>{
   assetInfo=()=>({...a.stats,wanted:a.MODELS.length});
-  return a.preload(a.MODELS).then(()=>furnishRooms(shell.slots,{cloneModel:a.cloneModel,THREE}));
+  return a.preload(a.MODELS).then(()=>furnishRooms(shell.slots,{cloneModel:a.cloneModel,toy,soft,blobShadow,PAL,makeCat:residentCat}));
 }).catch(e=>console.warn('stap B:',e)).finally(()=>{if(DEBUG)window.__house.stageB='done';});
 setTimeout(()=>{if(!started){controls.autoRotate=true;}},2000);
 setTimeout(()=>{const l=document.getElementById('load');if(l){l.style.opacity='0';setTimeout(()=>l.remove(),500);}},700);

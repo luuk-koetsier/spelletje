@@ -402,9 +402,10 @@ export function buildShell(scene) {
     toyParts.push(prep(new THREE.CylinderGeometry(0.41, 0.41, 0.1, 24), '#ffffff', mat(x, by, bz, Math.PI / 2, 0, 0)));
     const bu = (k % 4) * 0.25, bv = 1 - Math.floor(k / 4) * 0.5;
     badgeParts.push(prep(remapUV(new THREE.CircleGeometry(0.35, 24), (u, v) => [bu + u * 0.25, bv - 0.5 + v * 0.5]), '#ffffff', mat(x, by, bz + 0.056), true));
-    // onzichtbaar tikvlak over de hele kamer
-    const hit = new THREE.Mesh(new THREE.BoxGeometry(CW + P, CH + P, 2.0), hitMat);
-    hit.position.set(x, y + CH / 2, FRONT + 0.15 - 1.0);
+    // onzichtbaar tikvlak: een dunne plaat in de kameropening (van de kamerrand tot de voorkant
+    // van de gevel). Een diepe doos zou bij een gedraaid huis voor de buurkamer komen te liggen.
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(CW + P, CH + P, FRONT - ZF), hitMat);
+    hit.position.set(x, y + CH / 2, (ZF + FRONT) / 2);
     hit.visible = false;
     hit.userData.room = room;
     group.add(hit);

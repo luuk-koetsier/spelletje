@@ -1,6 +1,7 @@
 import { open, waitReady } from './common.mjs';
 
 const IDS = ['memory', 'puzzel', 'vormen', 'tellen', 'kleuren', 'verkleden', 'speel', 'stickers'];
+const FURNISHED = ['memory', 'puzzel', 'vormen', 'tellen'];
 let browser;
 
 async function fail(msg) {
@@ -18,6 +19,9 @@ try {
   try { await waitReady(page, 60000); }
   catch { await fail('__house.ready niet binnen 60 s' + (errors.length ? ' (' + errors[0] + ')' : '')); }
 
+  // De kamers worden in stap B ingericht (met hun bewoner-kat), dus daar eerst op wachten.
+  await page.waitForFunction(() => window.__house.stageB === 'done', null, { timeout: 60000, polling: 250 })
+    .catch(() => { throw new Error('stap B (modellen en inrichting) niet klaar binnen 60 s'); });
   const events = () => page.evaluate(() => window.__house.events.slice());
   const reset = () => page.evaluate(() => { window.__house.events.length = 0; document.getElementById('modal').classList.remove('open'); });
 
@@ -26,6 +30,22 @@ try {
   console.log('info: calls=' + info.calls + ' triangles=' + info.triangles + ' tier=' + info.tier);
   if (info.calls > 150) console.log('LET OP: calls ' + info.calls + ' > 150');
   if (info.triangles > 150000) console.log('LET OP: triangles ' + info.triangles + ' > 150000');
+
+  // Per ingerichte kamer hooguit 12 draw calls: meten door de kamer te verbergen.
+  for (const id of FURNISHED) {
+    const k = await page.evaluate((id) => {
+      const H = window.__house;
+      if (!H.hideRoom) return { err: '__house.hideRoom ontbreekt' };
+      H.frame(); const a = H.info();
+      H.hideRoom(id, true); H.frame(); const b = H.info();
+      H.hideRoom(id, false); H.frame();
+      return { calls: a.calls - b.calls, triangles: a.triangles - b.triangles };
+    }, id);
+    check(!k.err, k.err);
+    console.log('kamer ' + id + ': calls=' + k.calls + ' triangles=' + k.triangles);
+    check(k.calls >= 6, 'kamer ' + id + ' lijkt niet ingericht (' + k.calls + ' calls)');
+    check(k.calls <= 12, 'kamer ' + id + ' kost ' + k.calls + ' draw calls, verwacht hooguit 12');
+  }
 
   // ?q=low geeft de lage stand, en quality.js levert die ook.
   const q = await page.evaluate(async () => {
@@ -102,7 +122,8 @@ try {
   await reset();
   await page.evaluate(([x, y]) => window.__house.tap(x, y), [mauw.x, mauw.y]);
   const jumpOf = () => window.__house.cats().find(c => c.id === 'mauwtje').jumpY;
-  await page.waitForFunction(`(${jumpOf})() > 0.05`, null, { timeout: 5000, polling: 'raf' })
+  // SwiftShader haalt hier soms maar één beeld per seconde (of minder), dus ruim wachten.
+  await page.waitForFunction(`(${jumpOf})() > 0.05`, null, { timeout: 15000, polling: 'raf' })
     .catch(() => { throw new Error('Mauwtje springt niet na een tik'); });
   await page.waitForFunction(`(${jumpOf})() === 0`, null, { timeout: 8000, polling: 100 })
     .catch(() => { throw new Error('Mauwtje landt niet na het sprongetje'); });
@@ -120,6 +141,33 @@ try {
   await page.evaluate(([x, y]) => window.__house.drag(x, y, x + 120, y), [r0.x, r0.y]);
   const sev = await events();
   check(sev.length === 0, 'slepen logde ' + JSON.stringify(sev));
+
+  // Na een kort sleepje (38 px, het huis draait dan zo'n 17 graden bij tot ongeveer 30 graden schuin)
+  // opent een tik op een kamer die kamer en niet de buurkamer. Getikt wordt op het midden van de
+  // kameropening (k=0) en dieper in de kamer (k=0.7, wat je door de opening ziet). Staat de eigen
+  // bewoner-kat precies daar, dan is cat:<id> ook goed; een andere kamer nooit.
+  for (const dx of [38, -38]) {
+    await page.evaluate(() => window.__house.home());
+    const az0 = (await page.evaluate(() => window.__house.info())).azimuth;
+    const c = await page.evaluate(() => ({ x: innerWidth / 2, y: innerHeight * 0.85 }));
+    await page.evaluate(([x, y, dx]) => window.__house.drag(x, y, x + dx, y), [c.x, c.y, dx]);
+    await page.evaluate(() => window.__house.settle());
+    const az1 = (await page.evaluate(() => window.__house.info())).azimuth;
+    check(Math.abs(az1 - az0) >= 12, 'sleepje ' + dx + ' px draaide maar ' + (az1 - az0) + ' graden');
+    for (const k of [0, 0.7]) {
+      const fr = await page.evaluate((k) => window.__house.fronts(k), k);
+      check(fr.length === 8, 'fronts().length is ' + fr.length);
+      for (const r of fr) {
+        await reset();
+        await page.evaluate(([x, y]) => window.__house.tap(x, y), [r.x, r.y]);
+        const ev = await events();
+        check(ev.length === 1 && (ev[0] === 'open:' + r.id || ev[0] === 'cat:' + r.id),
+          'na sleepje ' + dx + ' px (azimut ' + az1 + '): tik op kamer ' + r.id + ' (k=' + k + ') gaf ' + JSON.stringify(ev));
+      }
+    }
+    console.log('sleepje ' + dx + ' px: azimut ' + az0 + ' -> ' + az1 + ' graden, alle kamertikken goed');
+  }
+  await page.evaluate(() => window.__house.home());
 
   // Tik op alle kamers op de huidige maat.
   async function tapAll(label) {
@@ -168,6 +216,8 @@ try {
     const pp = ph.page;
     try { await waitReady(pp, 60000); }
     catch { await fail(tag + ': __house.ready niet binnen 60 s' + (ph.errors.length ? ' (' + ph.errors[0] + ')' : '')); }
+    await pp.waitForFunction(() => window.__house.stageB === 'done', null, { timeout: 60000, polling: 250 })
+      .catch(() => { throw new Error(tag + ': stap B niet klaar binnen 60 s'); });
     const hb = await pp.evaluate(() => window.__house.bounds());
     console.log(tag + ': huis op scherm ' + JSON.stringify(hb) + ', vult ' + Math.round((hb.y1 - hb.y0) / H * 100) + '% van de hoogte');
     check(hb.x0 >= 0 && hb.y0 >= 0 && hb.x1 <= W && hb.y1 <= H, tag + ': het huis past niet in beeld: ' + JSON.stringify(hb));
@@ -243,6 +293,8 @@ try {
       const ev = await fp.evaluate(() => window.__house.events.slice());
       check(ev.length === 1 && ev[0] === 'open:' + r.id, 'failmodels: tik op ' + r.id + ' gaf ' + JSON.stringify(ev));
     }
+    const fcats = await fp.evaluate(() => window.__house.cats());
+    check(fcats.length === 11, 'failmodels: aantal katten is ' + fcats.length + ', verwacht 11');
     check(f.errors.length === 0, 'failmodels: ' + f.errors[0]);
     await browser.close();
   }
