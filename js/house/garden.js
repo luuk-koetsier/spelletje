@@ -200,7 +200,7 @@ export function buildGarden(scene, anchors) {
     const r = rng(23);
     const cluster = (cx, cz, n, spread = 0.35) => { for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2 + r(), rr = spread * (0.4 + r() * 0.6); spots.push([cx + Math.cos(a) * rr, cz + Math.sin(a) * rr]); } };
     cluster(-1.35, 6.05, 4); cluster(1.1, 6.2, 3, 0.28);         // bij de poort
-    cluster(-4.0, 4.3, 3); cluster(-2.6, 5.95, 3, 0.3);          // bij het hondenhok en de struik
+    cluster(-4.0, 4.3, 3); cluster(-2.6, 5.95, 3, 0.3);          // bij de struik links
     cluster(4.55, 4.85, 3, 0.3); cluster(-5.0, 2.2, 3, 0.3);      // naast het huis
     cluster(-2.6, 7.5, 3); cluster(2.9, 7.4, 3); cluster(-5.6, 6.3, 2); cluster(5.9, 5.9, 2);   // buiten het hekje
     const stems = new THREE.InstancedMesh(stem, softV, spots.length), heads = new THREE.InstancedMesh(petals, toyV, spots.length);

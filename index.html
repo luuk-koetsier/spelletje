@@ -1424,6 +1424,10 @@ const sfx = {
   koekoek(){ tone(740, 0.25, { type: "sine", vol: 0.25 }); tone(587, 0.35, { type: "sine", vol: 0.25, delay: 0.3 }); },
   blaf()   { tone(420, 0.09, { type: "square", glide: 160, vol: 0.22 }); tone(360, 0.1, { type: "square", glide: 140, vol: 0.2, delay: 0.14 }); },
   kwaak()  { tone(300, 0.14, { type: "sawtooth", glide: 200, vol: 0.15 }); },
+  // De geluidjes van de bloempot, het vogelhuisje en de gieter uit het oude 2D-huis, met een naam.
+  bloei()  { tone(660, 0.2, { type: "triangle", vol: 0.15 }); tone(880, 0.25, { type: "triangle", vol: 0.15, delay: 0.15 }); },
+  tsjilp() { tone(1200, 0.12, { type: "sine", glide: 1800, vol: 0.15 }); tone(1500, 0.12, { type: "sine", glide: 1000, vol: 0.15, delay: 0.15 }); },
+  gieten() { sfx.plop(); tone(900, 0.3, { type: "sine", glide: 500, vol: 0.1 }); },
 };
 
 /* ============================================================
@@ -1684,7 +1688,14 @@ window.KH = {
   },
   pop() { sfx.plop(); },
   meow() { sfx.miauw(); },
-  say(t) { speak(t); },
+  // Kies een zin, vul de naam in en spreek hem uit (speak zwijgt zelf als het geluid uit staat).
+  say(lines) {
+    const list = Array.isArray(lines) ? lines : [lines];
+    if (!list.length) return;
+    speak(String(pick(list)).replace(/\{NAAM\}/g, NAAM));
+  },
+  // Speel een geluidje uit sfx, alleen als het geluid aan staat en de naam bestaat.
+  sfx(name) { if (soundOn && Object.prototype.hasOwnProperty.call(sfx, name) && typeof sfx[name] === "function") sfx[name](); },
 };
 
 function roomTop(app, titel, kleur) {

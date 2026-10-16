@@ -422,6 +422,7 @@ export function buildShell(scene) {
 
   // Voordeur: een eigen groep, zodat hij kan stuiteren.
   const door = new THREE.Group();
+  door.name = 'house-door';
   door.position.set(0, Y0, ZF + 0.12);
   door.userData.isDoor = true; door.userData.baseY = Y0;
   {
@@ -451,10 +452,12 @@ export function buildShell(scene) {
     birdhouse: v(0, HEAD_Y + HEAD_RY + 0.15, 0.1),
     flowerpot: v(-0.95, 0.3, 1.42),
     mauwtje: v(2.0, GROUND, 2.45),
-    mailbox: v(1.9, GROUND, 5.7),
-    doghouse: v(-4.8, GROUND, 3.2),
-    wateringcan: v(3.0, GROUND, 4.4),
-    ball: v(-2.3, GROUND, 4.6),
+    // De tuinverrassingen staan dicht genoeg bij het huis om bij de startcamera op telefoon
+    // (staand) en desktop (liggend) in beeld te staan, naast het pad en niet voor de deur.
+    mailbox: v(1.15, GROUND, 3.0),
+    doghouse: v(-4.1, GROUND, 2.2),
+    wateringcan: v(3.7, GROUND, 2.1),
+    ball: v(-2.0, GROUND, 3.1),
     slide: v(4.82, GROUND, 4.0),
   };
 

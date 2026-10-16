@@ -11,8 +11,43 @@ async function fail(msg) {
 }
 const check = (ok, msg) => { if (!ok) throw new Error(msg); };
 
+// Verrassingen (Taak 9): tien ids. 'lucht' kan meer dan één ding in de lucht zijn.
+const SURPRISES = ['mauwtje', 'deurbel', 'klok', 'brievenbus', 'bloempot', 'vogelhuisje', 'hond', 'gieter', 'voetbal', 'lucht'];
+// Stub voor de stem: telt wat er gezegd zou worden. Met soundOff staat het geluid bij het laden uit.
+const speechStub = () => { window.__spoken = [];
+  if ('speechSynthesis' in window) { speechSynthesis.speak = u => window.__spoken.push(u.text); speechSynthesis.cancel = () => {}; } };
+const speechStubOff = () => { localStorage.setItem('kh_sound', 'uit'); window.__spoken = [];
+  if ('speechSynthesis' in window) { speechSynthesis.speak = u => window.__spoken.push(u.text); speechSynthesis.cancel = () => {}; } };
+
+// Elke verrassing staat met zijn tikpunt in beeld en heeft een tikvlak van minstens 1,6 keer zijn grootte.
+async function surprisesOnScreen(pg, W, H, tag) {
+  const ss = await pg.evaluate(() => { window.__house.home(); return window.__house.surprises && window.__house.surprises(); });
+  check(Array.isArray(ss), tag + ': __house.surprises() ontbreekt');
+  const ids = [...new Set(ss.map(q => q.id))].sort();
+  check(JSON.stringify(ids) === JSON.stringify([...SURPRISES].sort()), tag + ': verrassing-ids kloppen niet: ' + ids.join(','));
+  for (const q of ss) {
+    check(q.x >= 0 && q.x <= W && q.y >= 0 && q.y <= H, tag + ': verrassing ' + q.id + ' valt buiten beeld: ' + JSON.stringify(q));
+    check(q.ratio >= 1.6, tag + ': tikvlak van ' + q.id + ' is maar ' + q.ratio.toFixed(2) + ' keer de objectgrootte');
+  }
+  console.log(tag + ': verrassingen in beeld: ' + ss.map(q => q.id + '(' + q.x + ',' + q.y + ')').join(' '));
+  return ss;
+}
+// Een tik op elke verrassing logt precies surprise:<id> (nooit open:) en zet de beweging in gang.
+async function tapSurprises(pg, tag) {
+  const n = (await pg.evaluate(() => window.__house.surprises())).length;
+  for (let i = 0; i < n; i++) {
+    const q = await pg.evaluate((i) => { const H = window.__house; H.home(); H.events.length = 0;
+      document.getElementById('modal').classList.remove('open'); return H.surprises()[i]; }, i);
+    const r = await pg.evaluate(([i, x, y]) => { const H = window.__house; H.tap(x, y);
+      return { ev: H.events.slice(), active: H.surprises()[i].active, modal: document.getElementById('modal').classList.contains('open') }; }, [i, q.x, q.y]);
+    check(r.ev.length === 1 && r.ev[0] === 'surprise:' + q.id, tag + ': tik op verrassing ' + q.id + ' gaf ' + JSON.stringify(r.ev));
+    check(!r.modal, tag + ': tik op verrassing ' + q.id + ' opende het kaartje');
+    check(r.active, tag + ': verrassing ' + q.id + ' beweegt niet na een tik');
+  }
+}
+
 try {
-  const o = await open({ width: 1280, height: 800 });
+  const o = await open({ width: 1280, height: 800 }, 'debug=1&q=low', speechStub);
   browser = o.browser;
   const { page, errors } = o;
 
@@ -139,7 +174,7 @@ try {
   await page.evaluate(([x, y]) => window.__house.drag(x, y, x + 120, y), [mauw.x, mauw.y]);
   check((await events()).length === 0, 'slepen vanaf Mauwtje logde iets');
   // Tuin (Taak 10): flyers in de lucht, het hondenhok op zijn anker, bloemen lager dan een zittende kat,
-  // en de hele tuin hooguit 25 draw calls. De tik op de verrassingen 'lucht' en 'hond' komt met Taak 9.
+  // en de hele tuin hooguit 25 draw calls. De tik op de verrassingen staat hieronder (Taak 9).
   const gd = await page.evaluate(() => window.__house.garden && window.__house.garden());
   check(gd, '__house.garden() ontbreekt');
   console.log('tuin: ' + gd.calls + ' draw calls, ' + gd.triangles + ' driehoeken, ' + gd.flyers.length + ' flyers, bloem tot ' + gd.flowerTop.toFixed(2));
@@ -149,6 +184,24 @@ try {
     'hondenhok staat niet op anchors.doghouse: ' + JSON.stringify(gd));
   check(gd.calls <= 25, 'de tuin kost ' + gd.calls + ' draw calls, verwacht hooguit 25');
   check(gd.flowerTop < mauw.top, 'bloemen (tot ' + gd.flowerTop.toFixed(2) + ') zijn niet lager dan een zittende kat (' + mauw.top.toFixed(2) + ')');
+  // Verrassingen (Taak 9): in beeld, tikken logt surprise:<id>, slepen vanaf een verrassing logt niets.
+  const dss = await surprisesOnScreen(page, 1280, 800, 'desk 1280x800');
+  await tapSurprises(page, 'desk 1280x800');
+  for (let i = 0; i < dss.length; i++) {
+    const q = await page.evaluate((i) => { const H = window.__house; H.home(); H.events.length = 0; return H.surprises()[i]; }, i);
+    await page.evaluate(([x, y]) => window.__house.drag(x, y, x + 120, y), [q.x, q.y]);
+    const ev = await events();
+    check(ev.length === 0, 'slepen vanaf verrassing ' + q.id + ' logde ' + JSON.stringify(ev));
+  }
+  await page.evaluate(() => window.__house.home());
+  // Met het geluid aan zegt een verrassing iets (via KH.say, met de naam ingevuld).
+  {
+    const sp = await page.evaluate(() => { const H = window.__house; window.__spoken.length = 0;
+      const q = H.surprises().find(x => x.id === 'deurbel'); H.tap(q.x, q.y);
+      return { spoken: window.__spoken.slice(), has: 'speechSynthesis' in window, sound: window.KH.sound }; });
+    console.log('geluid aan, deurbel zegt: ' + JSON.stringify(sp.spoken));
+    check(!sp.has || !sp.sound || (sp.spoken.length === 1 && !sp.spoken[0].includes('{')), 'deurbel met geluid aan: ' + JSON.stringify(sp));
+  }
   // Camera terug naar de startstand, zodat de tests hierna dezelfde kijkhoek hebben als voorheen.
   await page.evaluate(() => document.getElementById('homeBtn').click());
   await page.waitForTimeout(1500);
@@ -269,7 +322,10 @@ try {
     const pg = await pp.evaluate(() => window.__house.garden());
     check(pg.flyers.some(f => f.x >= 0 && f.x <= W && f.y >= 0 && f.y <= H), tag + ': geen flyer in beeld: ' + JSON.stringify(pg.flyers));
     console.log(tag + ': tuin ' + pg.calls + ' draw calls, flyers in beeld ' + pg.flyers.filter(f => f.x >= 0 && f.x <= W && f.y >= 0 && f.y <= H).length + '/' + pg.flyers.length);
-    await pp.evaluate(() => { window.__house.events.length = 0; });
+    // Verrassingen: allemaal in beeld en aan te tikken.
+    await surprisesOnScreen(pp, W, H, tag);
+    await tapSurprises(pp, tag);
+    await pp.evaluate(() => { window.__house.home(); window.__house.events.length = 0; });
     await pp.evaluate(([x, y]) => window.__house.tap(x, y), [an.door.x, an.door.y]);
     const pdev = await pp.evaluate(() => window.__house.events.slice());
     check(pdev.length === 1 && pdev[0] === 'door', tag + ': tik op de deur (anker) gaf ' + JSON.stringify(pdev));
@@ -293,6 +349,24 @@ try {
     console.log('draaien 844x390 -> 390x844: huis op scherm ' + JSON.stringify(rb));
     check(rb.x0 >= 0 && rb.y0 >= 0 && rb.x1 <= 390 && rb.y1 <= 844, 'draaien: het huis past na liggend naar staand niet in beeld: ' + JSON.stringify(rb));
     check(rt.errors.length === 0, 'draaien: ' + rt.errors[0]);
+    await browser.close();
+  }
+
+  // Geluid uit (localStorage.kh_sound = 'uit'): een verrassing beweegt wel, maar speak wordt 0 keer aangeroepen.
+  {
+    const so = await open({ width: 1280, height: 800 }, 'debug=1&q=low', speechStubOff);
+    browser = so.browser;
+    const sp = so.page;
+    try { await waitReady(sp, 60000); }
+    catch { await fail('geluid uit: __house.ready niet binnen 60 s'); }
+    await sp.waitForFunction(() => window.__house.stageB === 'done', null, { timeout: 60000, polling: 250 })
+      .catch(() => { throw new Error('geluid uit: stap B niet klaar binnen 60 s'); });
+    check(await sp.evaluate(() => window.KH.sound) === false, 'geluid uit: KH.sound staat niet uit');
+    await tapSurprises(sp, 'geluid uit');
+    const spoken = await sp.evaluate(() => window.__spoken.slice());
+    check(spoken.length === 0, 'geluid uit: speak werd ' + spoken.length + ' keer aangeroepen: ' + JSON.stringify(spoken));
+    console.log('geluid uit: alle verrassingen bewegen, speak 0 keer aangeroepen');
+    check(so.errors.length === 0, 'geluid uit: ' + so.errors[0]);
     await browser.close();
   }
 

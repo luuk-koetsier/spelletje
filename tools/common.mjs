@@ -6,9 +6,11 @@ const ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignor
 const IGNORE = /fonts\.googleapis\.com|fonts\.gstatic\.com|favicon\.ico/;
 
 // Start Chromium en geef een pagina terug die fouten verzamelt in errors[].
-export async function open(viewport, query = 'debug=1&q=low') {
+// init (optioneel) draait in de pagina voor alle andere scripts (bijvoorbeeld om iets te stubben).
+export async function open(viewport, query = 'debug=1&q=low', init = null) {
   const browser = await chromium.launch({ executablePath: CHROME, args: ARGS });
   const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
+  if (init) await page.addInitScript(init);
   const errors = [];
   const own = new URL(BASE).origin;
   page.on('pageerror', e => errors.push('pagina-fout: ' + e.message));

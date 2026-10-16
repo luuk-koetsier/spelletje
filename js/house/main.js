@@ -14,6 +14,8 @@ import { makeCat, reactCat, updateCats } from './cats.js';
 import { furnishRooms } from './rooms/index.js';
 import { buildGarden } from './garden.js';
 import { initialTier, applyTier, createGovernor } from './quality.js';
+import { addSurprises, updateSurprises } from './surprises.js';
+import { attachInput } from './input.js';
 
 // Alle kleuren komen uit het pastelpalet in style.js.
 const COL=PAL;
@@ -76,7 +78,7 @@ key.castShadow=gov.tier==='high';
 // ─────────── de huisvorm: een kattenhuis met acht kamers (shell.js)
 const shell=buildShell(scene);
 const house=shell.group, door=shell.door, anchors=shell.anchors;
-const hitboxes=[...shell.slots.map(s=>s.hit),shell.doorHit];
+const roomHits=shell.slots.map(s=>s.hit), doorHit=shell.doorHit;
 // Per kamer een groep voor de inrichting (slot.group), met de oorsprong midden op de kamervloer.
 // De inrichters in rooms/ vullen die in stap B; bij hover schuift de groep iets naar voren.
 const roomObjs=shell.slots.map(s=>{
@@ -90,70 +92,48 @@ const roomObjs=shell.slots.map(s=>{
 // Acht bewoners (één per kamer, met een accessoire dat bij de kamer past), Mauwtje bij de deur
 // en twee katten in de tuin. Elke kamer zet zijn bewoner zelf neer (rooms/<id>.js), via
 // kit.makeCat in stap B.
-const catHits=[];
+const catGroups=[];   // alle katten (ook de bewoners die stap B later toevoegt), voor input.js
 function placeCat(spec,pos,scale,roty){
   const c=makeCat(spec);c.position.copy(pos);c.scale.setScalar(scale);c.rotation.y=roty||0;
-  scene.add(c);catHits.push(c.userData.hit);return c;
+  scene.add(c);catGroups.push(c);return c;
 }
 // Voor de inrichters: een kat maken en zijn tikvlak meteen aanmelden. Met spec.room is het de
 // bewoner van die kamer (een tik op hem gaat dan voor de kamer zelf).
 function residentCat(spec){
   const c=makeCat(spec),h=c.userData.hit;
   if(spec.room){c.userData.room=spec.room;h.userData.catRoom=spec.room;}
-  hitboxes.unshift(h);return c;
+  catGroups.push(c);return c;
 }
 placeCat({id:'mauwtje',fur:'#FFB35C',belly:'#FFD9A8',pose:'sit',accessory:'none'},anchors.mauwtje,0.95,0.15);
-placeCat({id:'tuin1',fur:'#E3DCD6',belly:'#FFFFFF',pose:'play',accessory:'none'},new THREE.Vector3(-3.5,-0.2,2.3),0.8,0.5);
+placeCat({id:'tuin1',fur:'#E3DCD6',belly:'#FFFFFF',pose:'play',accessory:'none'},new THREE.Vector3(-2.75,-0.2,2.45),0.8,0.5);
 placeCat({id:'tuin2',fur:'#6E6672',belly:'#EDE8EE',pose:'stand',accessory:'none'},new THREE.Vector3(3.15,-0.2,2.85),0.8,-0.5);
-hitboxes.unshift(...catHits);
 // Groot zacht vlekje onder het huis.
 {const b=blobShadow(6.2,0.28);b.scale.set(6.2,1,2.6);b.position.set(0,-0.18,0.3);scene.add(b);}
 
 // ─────────── tuin en lucht: gras, pad, hekje, struiken, bloemen, hondenhok, wolken en flyers (garden.js)
 const garden=buildGarden(scene,anchors);
 
+// ─────────── verrassingen om aan te tikken: deurbel, klok, vogelhuisje, tuinspullen en meer (surprises.js)
+const surprises=addSurprises(scene,anchors);
 
-const raycaster=new THREE.Raycaster();const ndc=new THREE.Vector2();
+
 let hovered=null,started=false,paused=false;
-const tip=document.getElementById('tip');
-function castAt(clientX,clientY){
-  ndc.x=(clientX/innerWidth)*2-1;ndc.y=-(clientY/innerHeight)*2+1;
-  raycaster.setFromCamera(ndc,camera);
-  const hits=raycaster.intersectObjects(hitboxes,false),first=hits[0]||null;
-  // Een bewoner-kat gaat voor zijn eigen kamer: een tik op de kat opent de kamer niet.
-  if(first&&first.object.userData.room){const id=first.object.userData.room.id;
-    const c=hits.find(h=>h.object.userData.catRoom===id);if(c)return c;}
-  return first;
-}
-let px0=0,py0=0,pt0=0,moved=false;
-canvas.addEventListener('pointerdown',e=>{px0=e.clientX;py0=e.clientY;pt0=performance.now();moved=false;
-  if(!started){started=true;controls.autoRotate=false;document.getElementById('hint').style.opacity='0';}});
-canvas.addEventListener('pointermove',e=>{
-  if(paused)return;
-  if(e.buttons){if(Math.hypot(e.clientX-px0,e.clientY-py0)>7)moved=true;}
-  const hit=castAt(e.clientX,e.clientY);
-  const obj=hit?hit.object:null;
-  if(obj!==hovered){hovered=obj;}
-  if(obj&&obj.userData.room){
-    tip.textContent=obj.userData.room.name;tip.style.left=e.clientX+'px';tip.style.top=e.clientY+'px';tip.style.opacity='1';
-    canvas.style.cursor='pointer';
-  } else if(obj&&obj.userData.catHit){tip.style.opacity='0';canvas.style.cursor='pointer';}
-  else if(obj&&obj.userData.doorHit){tip.textContent='Welkom!';tip.style.left=e.clientX+'px';tip.style.top=e.clientY+'px';tip.style.opacity='1';canvas.style.cursor='pointer';}
-  else {tip.style.opacity='0';canvas.style.cursor='grab';}
+attachInput(canvas,camera,controls,{rooms:roomHits,door:doorHit,surprises,cats:catGroups},{
+  openRoom,
+  door(){dbgEvents.push('door');bounceDoor();meow();},
+  surprise:tapSurprise,
+  cat:tapCat,
+},{
+  paused:()=>paused,
+  onStart(){if(!started){started=true;document.getElementById('hint').style.opacity='0';}},
+  onHover(o){hovered=o;},
 });
-canvas.addEventListener('pointerup',e=>{
-  if(paused)return;
-  const quick=performance.now()-pt0<450;
-  if(!moved&&quick){const hit=castAt(e.clientX,e.clientY);
-    if(hit&&hit.object.userData.catHit){tapCat(hit.object.userData.catHit);}
-    else if(hit&&hit.object.userData.room){openRoom(hit.object.userData.room);}
-    else if(hit&&hit.object.userData.doorHit){dbgEvents.push('door');bounceDoor();meow();}}
-});
-canvas.addEventListener('pointerleave',()=>{tip.style.opacity='0';hovered=null;});
 
 let doorBounce=0;function bounceDoor(){doorBounce=1;}
-// Tik op een kat: sprongetje en miauw. Mauwtje is ook een verrassing (Taak 9).
-function tapCat(c){const id=c.userData.catId;dbgEvents.push(id==='mauwtje'?'surprise:mauwtje':'cat:'+id);reactCat(c);}
+// Tik op een verrassing: logt surprise:<id> en start de reactie (surprises.js).
+function tapSurprise(s){dbgEvents.push('surprise:'+s.id);s.react();}
+// Tik op een kat: sprongetje en miauw. Een kat die ook een verrassing is (Mauwtje) reageert als verrassing.
+function tapCat(c){const s=surprises.find(q=>q.object===c);if(s)return tapSurprise(s);dbgEvents.push('cat:'+c.userData.catId);reactCat(c);}
 
 const modal=document.getElementById('modal');
 let currentRoom=null;
@@ -236,6 +216,7 @@ function animate(){
 
   updateCats(dt,t);
   garden.update(t);
+  updateSurprises(dt);
   renderer.render(scene,camera);
 }
 
@@ -288,7 +269,7 @@ if(DEBUG){
     ready:false,events:dbgEvents,
     info(){const i=renderer.info.render;return {calls:i.calls,triangles:i.triangles,tier:gov.tier,azimuth:Math.round(THREE.MathUtils.radToDeg(controls.getAzimuthalAngle()))};},
     // Per kamer: het midden van de kamer als schermpunt (daar tikt een kind) en de maat van het tikvlak.
-    rooms(){return hitboxes.filter(h=>h.userData.room).map(h=>{const id=h.userData.room.id;
+    rooms(){return roomHits.map(h=>{const id=h.userData.room.id;
       return {id,...fronts(0.5).find(f=>f.id===id),...rect(h)};});},
     // Schermpunt per kamer op diepte k (0: de kameropening, 0.5: het kamermidden, 1: de achterwand).
     fronts(k=0){return fronts(k);},
@@ -299,7 +280,10 @@ if(DEBUG){
       const c=house.localToWorld(s.center.clone());resetCam=0;controls.minDistance=0;
       const tanV=Math.tan(THREE.MathUtils.degToRad(camera.fov/2)),d=Math.max(1.5/(tanV*camera.aspect),1.25/tanV)+1.2;
       controls.target.copy(c);camera.position.copy(c).addScaledVector(new THREE.Vector3(0.2,0.16,1).normalize(),d);controls.update();return true;},
-    door(){return pt(hitboxes.find(h=>h.userData.doorHit));},
+    door(){return pt(doorHit);},
+    // Verrassingen: id, tikpunt (midden van het tikvlak) op het scherm, of de reactie loopt, en hoeveel
+    // keer zo groot het tikvlak is als het object (kleinste as).
+    surprises(){scene.updateMatrixWorld(true);return surprises.map(s=>({id:s.id,...pt(s.hit),active:s.active,ratio:s.hit.userData.ratio}));},
     // Wereldomhullende van de zichtbare delen (zonder schaduwvlekje en tikvlak).
     // Katten: id, tikpunt op het scherm, bovenkant en hoogte, en bij een bewoner de kamerhoogte.
     cats(){const out=[];scene.updateMatrixWorld(true);
@@ -318,6 +302,8 @@ if(DEBUG){
         for(let i=0;i<pos.count;i++){v.fromBufferAttribute(pos,i).applyMatrix4(o.matrixWorld).project(camera);
           const sx=(v.x+1)/2*innerWidth,sy=(1-v.y)/2*innerHeight;if(sx<x0)x0=sx;if(sx>x1)x1=sx;if(sy<y0)y0=sy;if(sy>y1)y1=sy;}});
       return {x0:Math.round(x0),y0:Math.round(y0),x1:Math.round(x1),y1:Math.round(y1)};},
+    // Wereldpunt naar schermpunt.
+    project(x,y,z){camera.updateMatrixWorld();const q=new THREE.Vector3(x,y,z).project(camera);return {x:Math.round((q.x+1)/2*innerWidth),y:Math.round((1-q.y)/2*innerHeight)};},
     tap(x,y){fire('pointerdown',x,y,1);fire('pointerup',x,y,0);},
     drag(x0,y0,x1,y1){fire('pointerdown',x0,y0,1);
       for(let i=1;i<=6;i++)fire('pointermove',x0+(x1-x0)*i/6,y0+(y1-y0)*i/6,1);
