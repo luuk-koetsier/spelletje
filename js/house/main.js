@@ -151,7 +151,9 @@ function openRoom(room){
 document.getElementById('cardClose').onclick=()=>modal.classList.remove('open');
 document.getElementById('cardPlay').onclick=()=>{
   modal.classList.remove('open');
-  if(currentRoom&&window.KH)window.KH.launchGame(currentRoom.id);
+  if(!currentRoom)return;
+  if(window.KH)window.KH.launchGame(currentRoom.id);
+  else if(window.toonFout)window.toonFout('de spelletjes zijn niet geladen');
 };
 modal.addEventListener('pointerdown',e=>{if(e.target===modal)modal.classList.remove('open');});
 
@@ -261,7 +263,8 @@ window.__hub3d={
     camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);fitCamera();fitW=innerWidth;fitAspect=camera.aspect;},
 };
 
-await document.fonts.ready.catch(()=>{});
+// niet eindeloos op Google Fonts wachten (traag of geblokkeerd netwerk): max 2,5 s
+await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,2500))]).catch(()=>{});
 if(DEBUG){
   // Testhook (alleen met ?debug=1): vaste camera, geen intro en geen automatisch draaien.
   introT=1;started=true;controls.autoRotate=false;camera.position.copy(camEnd);camera.lookAt(TARGET);controls.update();
