@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from 'fs';
 import { open, waitReady } from './common.mjs';
 
 const IDS = ['memory', 'puzzel', 'vormen', 'tellen', 'kleuren', 'verkleden', 'speel', 'stickers'];
@@ -30,6 +31,14 @@ async function surprisesOnScreen(pg, W, H, tag) {
     check(q.ratio >= 1.6, tag + ': tikvlak van ' + q.id + ' is maar ' + q.ratio.toFixed(2) + ' keer de objectgrootte');
   }
   console.log(tag + ': verrassingen in beeld: ' + ss.map(q => q.id + '(' + q.x + ',' + q.y + ')').join(' '));
+  // Op een telefoon (staand) is elk tikvlak minstens 44 px: 22 px links, rechts, boven en onder het tikpunt
+  // raakt nog dezelfde verrassing. (Niet voor de ballonnen: die zweven en zijn al groot. Op een groot scherm
+  // zijn de spullen zelf groter, daar telt alleen de tik op het midden.)
+  const R = 22;
+  for (const q of W <= 430 ? ss.filter(q => q.id !== 'lucht') : []) {
+    const got = await pg.evaluate(([x, y, R]) => [[x - R, y], [x + R, y], [x, y - R], [x, y + R]].map(([a, b]) => window.__house.pickAt(a, b)), [q.x, q.y, R]);
+    check(got.every(g => g === 'surprise:' + q.id), tag + ': tikvlak van ' + q.id + ' is kleiner dan 44 px: ' + JSON.stringify(got));
+  }
   return ss;
 }
 // Een tik op elke verrassing logt precies surprise:<id> (nooit open:) en zet de beweging in gang.
@@ -60,11 +69,23 @@ try {
   const events = () => page.evaluate(() => window.__house.events.slice());
   const reset = () => page.evaluate(() => { window.__house.events.length = 0; document.getElementById('modal').classList.remove('open'); });
 
-  // Prestatie: voorlopig alleen loggen (budget 150 calls / 150.000 driehoeken, hard vanaf Taak 11).
-  const info = await page.evaluate(() => { window.__house.frame(); return window.__house.info(); });
-  console.log('info: calls=' + info.calls + ' triangles=' + info.triangles + ' tier=' + info.tier);
-  if (info.calls > 150) console.log('LET OP: calls ' + info.calls + ' > 150');
-  if (info.triangles > 150000) console.log('LET OP: triangles ' + info.triangles + ' > 150000');
+  // Prestatie in de lage stand: hooguit 150 draw calls en 150.000 driehoeken (de hoge stand staat verderop).
+  const info = await page.evaluate(() => { window.__house.home(); return window.__house.budget(); });
+  console.log('budget low: calls=' + info.calls + ' triangles=' + info.triangles + ' tier=' + info.tier);
+  check(info.tier === 'low', 'budget: verwacht tier low, kreeg ' + info.tier);
+  check(info.calls <= 150, 'budget low: ' + info.calls + ' draw calls, verwacht hooguit 150');
+  check(info.triangles <= 150000, 'budget low: ' + info.triangles + ' driehoeken, verwacht hooguit 150.000');
+  // Alleen modellen die een kamer of de tuin echt gebruikt staan in assets/models.
+  {
+    const src = ['rooms/memory', 'rooms/puzzel', 'rooms/vormen', 'rooms/tellen', 'rooms/kleuren', 'rooms/verkleden', 'rooms/speel', 'rooms/stickers', 'garden']
+      .map(f => readFileSync(new URL('../js/house/' + f + '.js', import.meta.url), 'utf8')).join('\n');
+    const files = readdirSync(new URL('../assets/models/', import.meta.url)).filter(f => f.endsWith('.glb')).map(f => f.slice(0, -4));
+    const unused = files.filter(n => !src.includes("'" + n + "'"));
+    check(unused.length === 0, 'modellen die niemand gebruikt: ' + unused.join(', '));
+    const am0 = await page.evaluate(() => window.__house.assets());
+    check(am0.wanted === files.length, 'assets.js laadt ' + am0.wanted + ' modellen, maar er staan er ' + files.length + ' in assets/models');
+    console.log('modellen: ' + files.length + ' bestanden, allemaal gebruikt');
+  }
 
   // Per ingerichte kamer hooguit 12 draw calls: meten door de kamer te verbergen.
   for (const id of FURNISHED) {
@@ -85,9 +106,14 @@ try {
   // Lampen: hooguit twee PointLights in het hele huis, en hooguit één lamp met schaduw.
   const li = await page.evaluate(() => window.__house.lights ? window.__house.lights() : null);
   check(li, '__house.lights ontbreekt');
-  console.log('lampen: ' + li.point + ' PointLights, ' + li.shadow + ' met schaduw');
+  console.log('lampen: ' + li.point + ' PointLights (' + li.pointOn + ' aan), ' + li.shadow + ' met schaduw');
   check(li.point <= 2, li.point + ' PointLights, verwacht hooguit 2');
   check(li.shadow <= 1, li.shadow + ' lampen met schaduw, verwacht hooguit 1');
+  check(li.pointOn === 0, 'lage stand: ' + li.pointOn + ' PointLights staan nog aan');
+  // Idle: de ogen in de gevel knipperen af en toe (kort dicht, meestal open).
+  const bl = await page.evaluate(async () => { const m = await import('/js/house/shell.js'); let closed = 0, n = 0;
+    for (let t = 0; t < 13; t += 0.01) { n++; if (m.blinkAt(t) < 0.5) closed++; } return { closed, n }; });
+  check(bl.closed > 0 && bl.closed < bl.n * 0.1, 'de ogen knipperen niet (of zijn te vaak dicht): ' + JSON.stringify(bl));
 
   // ?q=low geeft de lage stand, en quality.js levert die ook.
   const q = await page.evaluate(async () => {
@@ -97,19 +123,27 @@ try {
   check(!q.err, 'quality.js laden mislukt: ' + q.err);
   check(q.init === 'low' && q.tier === 'low', '?q=low gaf tier ' + JSON.stringify(q));
 
-  // Governor: 3 s aan 40 ms per beeld geeft low, daarna 3 s aan 10 ms blijft low.
+  // Governor: vóór arm() en in de 2 s opwarmtijd daarna telt niets (shaders compileren); daarna geeft
+  // 3 s aan 40 ms per beeld low, en daarna 3 s aan 10 ms blijft low.
   const gov = await page.evaluate(async () => {
     const m = await import('/js/house/quality.js');
     const fake = { pr: 2, setPixelRatio(v) { this.pr = v; }, shadowMap: { enabled: true } };
     const changes = [];
-    const g = m.createGovernor(fake, t => changes.push(t), 'high');
+    const g = m.createGovernor(fake, t => changes.push(t), 'high', { locked: false });
     const start = g.tier;
-    for (let i = 0; i < 75; i++) g.tick(0.04);
+    for (let i = 0; i < 150; i++) g.tick(0.04);     // 6 s traag, maar nog niet klaar (niet gewapend)
+    const beforeArm = g.tier;
+    g.arm();
+    for (let i = 0; i < 45; i++) g.tick(0.04);      // 1,8 s: binnen de opwarmtijd
+    const inWarmup = g.tier;
+    for (let i = 0; i < 80; i++) g.tick(0.04);
     const afterSlow = g.tier;
     for (let i = 0; i < 300; i++) g.tick(0.01);
-    return { start, afterSlow, afterFast: g.tier, changes, pr: fake.pr, shadow: fake.shadowMap.enabled };
+    return { start, beforeArm, inWarmup, afterSlow, afterFast: g.tier, changes, pr: fake.pr, shadow: fake.shadowMap.enabled };
   });
   check(gov.start === 'high', 'governor begint niet op high: ' + JSON.stringify(gov));
+  check(gov.beforeArm === 'high', 'governor schakelt al omlaag voordat het huis klaar is: ' + JSON.stringify(gov));
+  check(gov.inWarmup === 'high', 'governor schakelt omlaag binnen de opwarmtijd: ' + JSON.stringify(gov));
   check(gov.afterSlow === 'low', 'governor schakelt niet naar low bij 25 fps: ' + JSON.stringify(gov));
   check(gov.afterFast === 'low', 'governor schakelt terug naar high: ' + JSON.stringify(gov));
   check(JSON.stringify(gov.changes) === '["low"]', 'governor onChange klopt niet: ' + JSON.stringify(gov));
@@ -167,7 +201,7 @@ try {
   // SwiftShader haalt hier soms maar één beeld per seconde (of minder), dus ruim wachten.
   await page.waitForFunction(`(${jumpOf})() > 0.05`, null, { timeout: 15000, polling: 'raf' })
     .catch(() => { throw new Error('Mauwtje springt niet na een tik'); });
-  await page.waitForFunction(`(${jumpOf})() === 0`, null, { timeout: 8000, polling: 100 })
+  await page.waitForFunction(`(${jumpOf})() === 0`, null, { timeout: 20000, polling: 100 })
     .catch(() => { throw new Error('Mauwtje landt niet na het sprongetje'); });
   // Slepen vanaf een kat activeert niets.
   await reset();
@@ -292,6 +326,18 @@ try {
     const hb = await pp.evaluate(() => window.__house.bounds());
     console.log(tag + ': huis op scherm ' + JSON.stringify(hb) + ', vult ' + Math.round((hb.y1 - hb.y0) / H * 100) + '% van de hoogte');
     check(hb.x0 >= 0 && hb.y0 >= 0 && hb.x1 <= W && hb.y1 <= H, tag + ': het huis past niet in beeld: ' + JSON.stringify(hb));
+    // De titel overlapt de knoppen niet en staat niet over het dak (de oren) bij de startcamera.
+    const ui = await pp.evaluate(() => { const r = s => { const b = document.querySelector(s).getBoundingClientRect(); return { x0: b.left, y0: b.top, x1: b.right, y1: b.bottom }; };
+      return { title: r('.title-wrap'), home: r('#homeBtn'), sound: r('#soundBtn') }; });
+    const cut = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+    console.log(tag + ': titel ' + JSON.stringify(ui.title));
+    check(!cut(ui.title, ui.home) && !cut(ui.title, ui.sound), tag + ': de titel overlapt een knop: ' + JSON.stringify(ui));
+    check(ui.title.x0 >= 0 && ui.title.x1 <= W, tag + ': de titel valt buiten beeld: ' + JSON.stringify(ui.title));
+    check(ui.title.y1 <= hb.y0, tag + ': de titel (onderkant ' + ui.title.y1 + ') staat over het dak (bovenkant ' + hb.y0 + ')');
+    // Het hondenhok staat helemaal in beeld.
+    const dh = (await pp.evaluate(() => window.__house.garden())).doghouseRect;
+    console.log(tag + ': hondenhok op scherm ' + JSON.stringify(dh));
+    check(dh.x0 >= 0 && dh.y0 >= 0 && dh.x1 <= W && dh.y1 <= H, tag + ': het hondenhok valt (deels) buiten beeld: ' + JSON.stringify(dh));
     const prs = await pp.evaluate(() => window.__house.rooms());
     check(prs.length === 8, tag + ': rooms().length is ' + prs.length);
     for (const r of prs) {
@@ -329,6 +375,27 @@ try {
     await pp.evaluate(([x, y]) => window.__house.tap(x, y), [an.door.x, an.door.y]);
     const pdev = await pp.evaluate(() => window.__house.events.slice());
     check(pdev.length === 1 && pdev[0] === 'door', tag + ': tik op de deur (anker) gaf ' + JSON.stringify(pdev));
+    // De adresbalk van een telefoon verschijnt of verdwijnt (alleen de hoogte verandert een beetje):
+    // de draaiing en de zoom van het kind blijven staan.
+    await pp.evaluate(() => window.__house.home());
+    await pp.evaluate(([x, y]) => window.__house.drag(x, y, x + 40, y), [W / 2, H * 0.85]);
+    await pp.mouse.move(W / 2, H / 2);
+    await pp.mouse.wheel(0, -300);
+    await pp.waitForTimeout(200);
+    const c0 = await pp.evaluate(() => { window.__house.settle(); return window.__house.cam(); });
+    await pp.setViewportSize({ width: W, height: H - 80 });
+    await pp.waitForTimeout(400);
+    const c1 = await pp.evaluate(() => { window.__house.settle(); return window.__house.cam(); });
+    console.log(tag + ': adresbalk ' + H + ' -> ' + (H - 80) + ' px: camera ' + JSON.stringify(c0) + ' -> ' + JSON.stringify(c1));
+    check(c0.distance < c0.home * 0.97, tag + ': inzoomen met het wieltje werkte niet: ' + JSON.stringify(c0));
+    check(Math.abs(c1.azimuth - c0.azimuth) < 0.5 && Math.abs(c1.distance / c0.distance - 1) < 0.01,
+      tag + ': de adresbalk zette de camera terug: ' + JSON.stringify([c0, c1]));
+    // En terug naar de volle hoogte vanaf de startstand: het huis past dan nog steeds.
+    await pp.evaluate(() => window.__house.home());
+    await pp.setViewportSize({ width: W, height: H });
+    await pp.waitForTimeout(400);
+    const hb2 = await pp.evaluate(() => { window.__house.settle(); window.__house.frame(); return window.__house.bounds(); });
+    check(hb2.x0 >= 0 && hb2.y0 >= 0 && hb2.x1 <= W && hb2.y1 <= H, tag + ': na de adresbalk past het huis niet meer: ' + JSON.stringify(hb2));
     check(ph.errors.length === 0, tag + ': ' + ph.errors[0]);
     await browser.close();
   }
@@ -367,6 +434,27 @@ try {
     check(spoken.length === 0, 'geluid uit: speak werd ' + spoken.length + ' keer aangeroepen: ' + JSON.stringify(spoken));
     console.log('geluid uit: alle verrassingen bewegen, speak 0 keer aangeroepen');
     check(so.errors.length === 0, 'geluid uit: ' + so.errors[0]);
+    await browser.close();
+  }
+
+  // De hoge stand (?q=high: schaduw aan, governor vast) met alles geladen: het budget is hard, ook met de
+  // schaduwpas meegeteld (renderer.info telt die normaal niet), en de twee PointLights staan aan.
+  {
+    const hi = await open({ width: 390, height: 844 }, 'debug=1&q=high');
+    browser = hi.browser;
+    const hp = hi.page;
+    try { await waitReady(hp, 120000); }
+    catch { await fail('hoge stand: __house.ready niet binnen 120 s'); }
+    await hp.waitForFunction(() => window.__house.stageB === 'done', null, { timeout: 120000, polling: 500 })
+      .catch(() => { throw new Error('hoge stand: stap B niet klaar binnen 120 s'); });
+    const b = await hp.evaluate(() => { window.__house.home(); return window.__house.budget(); });
+    console.log('budget high: ' + JSON.stringify(b));
+    check(b.tier === 'high' && b.shadow, 'hoge stand: verwacht tier high met schaduw: ' + JSON.stringify(b));
+    check(b.calls <= 150 && b.triangles <= 150000, 'budget high (hoofdpas) te hoog: ' + JSON.stringify(b));
+    check(b.totalCalls <= 150 && b.totalTriangles <= 150000, 'budget high (met schaduwpas) te hoog: ' + JSON.stringify(b));
+    const hl = await hp.evaluate(() => window.__house.lights());
+    check(hl.pointOn === 2, 'hoge stand: verwacht 2 PointLights aan, kreeg ' + JSON.stringify(hl));
+    check(hi.errors.length === 0, 'hoge stand: ' + hi.errors[0]);
     await browser.close();
   }
 
