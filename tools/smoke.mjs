@@ -1,0 +1,527 @@
+import { readdirSync, readFileSync } from 'fs';
+import { open, waitReady } from './common.mjs';
+
+const IDS = ['memory', 'puzzel', 'vormen', 'tellen', 'kleuren', 'verkleden', 'speel', 'stickers'];
+const FURNISHED = IDS;
+let browser;
+
+async function fail(msg) {
+  console.error('SMOKE FAIL: ' + msg);
+  if (browser) await browser.close().catch(() => {});
+  process.exit(1);
+}
+const check = (ok, msg) => { if (!ok) throw new Error(msg); };
+
+// Verrassingen (Taak 9): tien ids. 'lucht' kan meer dan één ding in de lucht zijn.
+const SURPRISES = ['mauwtje', 'deurbel', 'klok', 'brievenbus', 'bloempot', 'vogelhuisje', 'hond', 'gieter', 'voetbal', 'lucht'];
+// Stub voor de stem: telt wat er gezegd zou worden. Met soundOff staat het geluid bij het laden uit.
+const speechStub = () => { window.__spoken = [];
+  if ('speechSynthesis' in window) { speechSynthesis.speak = u => window.__spoken.push(u.text); speechSynthesis.cancel = () => {}; } };
+const speechStubOff = () => { localStorage.setItem('kh_sound', 'uit'); window.__spoken = [];
+  if ('speechSynthesis' in window) { speechSynthesis.speak = u => window.__spoken.push(u.text); speechSynthesis.cancel = () => {}; } };
+
+// Elke verrassing staat met zijn tikpunt in beeld en heeft een tikvlak van minstens 1,6 keer zijn grootte.
+async function surprisesOnScreen(pg, W, H, tag) {
+  const ss = await pg.evaluate(() => { window.__house.home(); return window.__house.surprises && window.__house.surprises(); });
+  check(Array.isArray(ss), tag + ': __house.surprises() ontbreekt');
+  const ids = [...new Set(ss.map(q => q.id))].sort();
+  check(JSON.stringify(ids) === JSON.stringify([...SURPRISES].sort()), tag + ': verrassing-ids kloppen niet: ' + ids.join(','));
+  for (const q of ss) {
+    check(q.x >= 0 && q.x <= W && q.y >= 0 && q.y <= H, tag + ': verrassing ' + q.id + ' valt buiten beeld: ' + JSON.stringify(q));
+    check(q.ratio >= 1.6, tag + ': tikvlak van ' + q.id + ' is maar ' + q.ratio.toFixed(2) + ' keer de objectgrootte');
+  }
+  console.log(tag + ': verrassingen in beeld: ' + ss.map(q => q.id + '(' + q.x + ',' + q.y + ')').join(' '));
+  // Op een telefoon (staand) is elk tikvlak minstens 44 px: 22 px links, rechts, boven en onder het tikpunt
+  // raakt nog dezelfde verrassing. (Niet voor de ballonnen: die zweven en zijn al groot. Op een groot scherm
+  // zijn de spullen zelf groter, daar telt alleen de tik op het midden.)
+  // De deurbel zit in de smalle strook tussen de deur en de kamer ernaast: die twee gaan voor zijn ruime
+  // tikvlak, dus daar telt alleen de hoogte (44 px), en links en rechts moeten de deur en de kamer liggen.
+  const R = 22;
+  for (const q of W <= 430 ? ss.filter(q => q.id !== 'lucht') : []) {
+    const got = await pg.evaluate(([x, y, R]) => [[x - R, y], [x + R, y], [x, y - R], [x, y + R]].map(([a, b]) => window.__house.pickAt(a, b)), [q.x, q.y, R]);
+    const me = 'surprise:' + q.id;
+    if (q.id === 'deurbel') {
+      check(got[0] === 'door' && /^(room|cat):/.test(got[1]) && got[2] === me && got[3] === me, tag + ': deurbel: verwacht [door, kamer of zijn kat, bel, bel], kreeg ' + JSON.stringify(got));
+      const w = await pg.evaluate(([x, y]) => { let a = x, b = x; while (window.__house.pickAt(a - 1, y) === 'surprise:deurbel') a--;
+        while (window.__house.pickAt(b + 1, y) === 'surprise:deurbel') b++; return b - a + 1; }, [q.x, q.y]);
+      console.log(tag + ': deurbel ' + w + ' px breed (tussen deur en kamer), 44 px hoog');
+      check(w >= 10, tag + ': deurbel is maar ' + w + ' px breed');
+    } else check(got.every(g => g === me), tag + ': tikvlak van ' + q.id + ' is kleiner dan 44 px: ' + JSON.stringify(got));
+  }
+  return ss;
+}
+// Een tik op elke verrassing logt precies surprise:<id> (nooit open:) en zet de beweging in gang.
+async function tapSurprises(pg, tag) {
+  const n = (await pg.evaluate(() => window.__house.surprises())).length;
+  for (let i = 0; i < n; i++) {
+    const q = await pg.evaluate((i) => { const H = window.__house; H.home(); H.events.length = 0;
+      document.getElementById('modal').classList.remove('open'); return H.surprises()[i]; }, i);
+    const r = await pg.evaluate(([i, x, y]) => { const H = window.__house; H.tap(x, y);
+      return { ev: H.events.slice(), active: H.surprises()[i].active, modal: document.getElementById('modal').classList.contains('open') }; }, [i, q.x, q.y]);
+    check(r.ev.length === 1 && r.ev[0] === 'surprise:' + q.id, tag + ': tik op verrassing ' + q.id + ' gaf ' + JSON.stringify(r.ev));
+    check(!r.modal, tag + ': tik op verrassing ' + q.id + ' opende het kaartje');
+    check(r.active, tag + ': verrassing ' + q.id + ' beweegt niet na een tik');
+  }
+}
+
+try {
+  const o = await open({ width: 1280, height: 800 }, 'debug=1&q=low', speechStub);
+  browser = o.browser;
+  const { page, errors } = o;
+
+  try { await waitReady(page, 60000); }
+  catch { await fail('__house.ready niet binnen 60 s' + (errors.length ? ' (' + errors[0] + ')' : '')); }
+
+  // De kamers worden in stap B ingericht (met hun bewoner-kat), dus daar eerst op wachten.
+  await page.waitForFunction(() => window.__house.stageB === 'done', null, { timeout: 60000, polling: 250 })
+    .catch(() => { throw new Error('stap B (modellen en inrichting) niet klaar binnen 60 s'); });
+  const events = () => page.evaluate(() => window.__house.events.slice());
+  const reset = () => page.evaluate(() => { window.__house.events.length = 0; document.getElementById('modal').classList.remove('open'); });
+
+  // Prestatie in de lage stand: hooguit 150 draw calls en 150.000 driehoeken (de hoge stand staat verderop).
+  const info = await page.evaluate(() => { window.__house.home(); return window.__house.budget(); });
+  console.log('budget low: calls=' + info.calls + ' triangles=' + info.triangles + ' tier=' + info.tier);
+  check(info.tier === 'low', 'budget: verwacht tier low, kreeg ' + info.tier);
+  check(info.calls <= 150, 'budget low: ' + info.calls + ' draw calls, verwacht hooguit 150');
+  check(info.triangles <= 150000, 'budget low: ' + info.triangles + ' driehoeken, verwacht hooguit 150.000');
+  // Alleen modellen die een kamer of de tuin echt gebruikt staan in assets/models.
+  {
+    const src = ['rooms/memory', 'rooms/puzzel', 'rooms/vormen', 'rooms/tellen', 'rooms/kleuren', 'rooms/verkleden', 'rooms/speel', 'rooms/stickers', 'garden']
+      .map(f => readFileSync(new URL('../js/house/' + f + '.js', import.meta.url), 'utf8')).join('\n');
+    const files = readdirSync(new URL('../assets/models/', import.meta.url)).filter(f => f.endsWith('.glb')).map(f => f.slice(0, -4));
+    const unused = files.filter(n => !src.includes("'" + n + "'"));
+    check(unused.length === 0, 'modellen die niemand gebruikt: ' + unused.join(', '));
+    const am0 = await page.evaluate(() => window.__house.assets());
+    check(am0.wanted === files.length, 'assets.js laadt ' + am0.wanted + ' modellen, maar er staan er ' + files.length + ' in assets/models');
+    console.log('modellen: ' + files.length + ' bestanden, allemaal gebruikt');
+  }
+
+  // Per ingerichte kamer hooguit 12 draw calls: meten door de kamer te verbergen.
+  for (const id of FURNISHED) {
+    const k = await page.evaluate((id) => {
+      const H = window.__house;
+      if (!H.hideRoom) return { err: '__house.hideRoom ontbreekt' };
+      H.frame(); const a = H.info();
+      H.hideRoom(id, true); H.frame(); const b = H.info();
+      H.hideRoom(id, false); H.frame();
+      return { calls: a.calls - b.calls, triangles: a.triangles - b.triangles };
+    }, id);
+    check(!k.err, k.err);
+    console.log('kamer ' + id + ': calls=' + k.calls + ' triangles=' + k.triangles);
+    check(k.calls >= 6, 'kamer ' + id + ' lijkt niet ingericht (' + k.calls + ' calls)');
+    check(k.calls <= 12, 'kamer ' + id + ' kost ' + k.calls + ' draw calls, verwacht hooguit 12');
+  }
+
+  // Lampen: hooguit twee PointLights in het hele huis, en hooguit één lamp met schaduw.
+  const li = await page.evaluate(() => window.__house.lights ? window.__house.lights() : null);
+  check(li, '__house.lights ontbreekt');
+  console.log('lampen: ' + li.point + ' PointLights (' + li.pointOn + ' aan), ' + li.shadow + ' met schaduw');
+  check(li.point <= 2, li.point + ' PointLights, verwacht hooguit 2');
+  check(li.shadow <= 1, li.shadow + ' lampen met schaduw, verwacht hooguit 1');
+  check(li.pointOn === 0, 'lage stand: ' + li.pointOn + ' PointLights staan nog aan');
+  // Idle: de ogen in de gevel knipperen af en toe (kort dicht, meestal open).
+  const bl = await page.evaluate(async () => { const m = await import('/js/house/shell.js'); let closed = 0, n = 0;
+    for (let t = 0; t < 13; t += 0.01) { n++; if (m.blinkAt(t) < 0.5) closed++; } return { closed, n }; });
+  check(bl.closed > 0 && bl.closed < bl.n * 0.1, 'de ogen knipperen niet (of zijn te vaak dicht): ' + JSON.stringify(bl));
+
+  // ?q=low geeft de lage stand, en quality.js levert die ook.
+  const q = await page.evaluate(async () => {
+    try { const m = await import('/js/house/quality.js'); return { init: m.initialTier(), tier: window.__house.info().tier }; }
+    catch (e) { return { err: e.message }; }
+  });
+  check(!q.err, 'quality.js laden mislukt: ' + q.err);
+  check(q.init === 'low' && q.tier === 'low', '?q=low gaf tier ' + JSON.stringify(q));
+
+  // Governor: vóór arm() en in de 2 s opwarmtijd daarna telt niets (shaders compileren); daarna geeft
+  // 3 s aan 40 ms per beeld low, en daarna 3 s aan 10 ms blijft low.
+  const gov = await page.evaluate(async () => {
+    const m = await import('/js/house/quality.js');
+    const fake = { pr: 2, setPixelRatio(v) { this.pr = v; }, shadowMap: { enabled: true } };
+    const changes = [];
+    const g = m.createGovernor(fake, t => changes.push(t), 'high', { locked: false });
+    const start = g.tier;
+    for (let i = 0; i < 150; i++) g.tick(0.04);     // 6 s traag, maar nog niet klaar (niet gewapend)
+    const beforeArm = g.tier;
+    g.arm();
+    for (let i = 0; i < 45; i++) g.tick(0.04);      // 1,8 s: binnen de opwarmtijd
+    const inWarmup = g.tier;
+    for (let i = 0; i < 80; i++) g.tick(0.04);
+    const afterSlow = g.tier;
+    for (let i = 0; i < 300; i++) g.tick(0.01);
+    return { start, beforeArm, inWarmup, afterSlow, afterFast: g.tier, changes, pr: fake.pr, shadow: fake.shadowMap.enabled };
+  });
+  check(gov.start === 'high', 'governor begint niet op high: ' + JSON.stringify(gov));
+  check(gov.beforeArm === 'high', 'governor schakelt al omlaag voordat het huis klaar is: ' + JSON.stringify(gov));
+  check(gov.inWarmup === 'high', 'governor schakelt omlaag binnen de opwarmtijd: ' + JSON.stringify(gov));
+  check(gov.afterSlow === 'low', 'governor schakelt niet naar low bij 25 fps: ' + JSON.stringify(gov));
+  check(gov.afterFast === 'low', 'governor schakelt terug naar high: ' + JSON.stringify(gov));
+  check(JSON.stringify(gov.changes) === '["low"]', 'governor onChange klopt niet: ' + JSON.stringify(gov));
+  check(gov.pr === 1 && gov.shadow === false, 'governor zet low niet goed op de renderer: ' + JSON.stringify(gov));
+
+  const rooms = await page.evaluate(() => window.__house.rooms());
+  check(rooms.length === 8, 'rooms().length is ' + rooms.length + ', verwacht 8');
+
+  // Een tik op elk kamermidden opent die kamer.
+  for (const r of rooms) {
+    await reset();
+    await page.evaluate(([x, y]) => window.__house.tap(x, y), [r.x, r.y]);
+    const ev = await events();
+    check(ev.length === 1 && ev[0] === 'open:' + r.id, 'tik op ' + r.id + ' gaf ' + JSON.stringify(ev));
+  }
+  const got = rooms.map(r => r.id).sort();
+  check(JSON.stringify(got) === JSON.stringify([...IDS].sort()), 'kamer-ids kloppen niet: ' + got.join(','));
+
+  // Een tik op de voordeur logt door.
+  await reset();
+  const d = await page.evaluate(() => window.__house.door());
+  await page.evaluate(([x, y]) => window.__house.tap(x, y), [d.x, d.y]);
+  const dev = await events();
+  check(dev.length === 1 && dev[0] === 'door', 'tik op de voordeur gaf ' + JSON.stringify(dev));
+
+  // Katten: elf in één stijl (acht bewoners, Mauwtje en twee tuinkatten).
+  const cats = await page.evaluate(() => window.__house.cats && window.__house.cats());
+  check(Array.isArray(cats), '__house.cats() ontbreekt');
+  check(cats.length === 11, 'aantal objecten met userData.catId is ' + cats.length + ', verwacht 11');
+  const catIds = cats.map(c => c.id).sort();
+  check(JSON.stringify(catIds) === JSON.stringify([...IDS, 'mauwtje', 'tuin1', 'tuin2'].sort()), 'kat-ids kloppen niet: ' + catIds.join(','));
+  const mauw = cats.find(c => c.id === 'mauwtje');
+  const doorBox = await page.evaluate(() => window.__house.doorBox());
+  console.log('mauwtje: bovenkant ' + mauw.top.toFixed(2) + ', deur: bovenkant ' + doorBox.top.toFixed(2));
+  check(mauw.top < doorBox.top, 'Mauwtje (bovenkant ' + mauw.top.toFixed(2) + ') is niet lager dan de deur (' + doorBox.top.toFixed(2) + ')');
+  for (const c of cats.filter(c => c.room)) {
+    const k = c.height / c.roomH;
+    check(k > 0.25 && k < 0.55, 'bewoner ' + c.id + ' is ' + k.toFixed(2) + ' keer de kamerhoogte');
+  }
+  console.log('bewoners: ' + cats.filter(c => c.room).map(c => c.id + '=' + (c.height / c.roomH).toFixed(2)).join(' '));
+  // Een tik op elke kat geeft een sprongetje en logt cat:<id> (Mauwtje: surprise:mauwtje), ook in een kamer.
+  for (const c of cats) {
+    check(c.x >= 0 && c.x <= 1280 && c.y >= 0 && c.y <= 800, 'kat ' + c.id + ' valt buiten beeld: ' + JSON.stringify(c));
+    await reset();
+    await page.evaluate(([x, y]) => window.__house.tap(x, y), [c.x, c.y]);
+    const ev = await events();
+    const want = c.id === 'mauwtje' ? 'surprise:mauwtje' : 'cat:' + c.id;
+    check(ev.length === 1 && ev[0] === want, 'tik op kat ' + c.id + ' gaf ' + JSON.stringify(ev));
+  }
+  // Het sprongetje: na een tik komt Mauwtje los van de grond en daarna staat hij weer.
+  // (Headless rendert traag, dus wachten op de toestand in plaats van op een vaste tijd.)
+  await reset();
+  await page.evaluate(([x, y]) => window.__house.tap(x, y), [mauw.x, mauw.y]);
+  const jumpOf = () => window.__house.cats().find(c => c.id === 'mauwtje').jumpY;
+  // SwiftShader haalt hier soms maar één beeld per drie seconden (of minder), dus ruim wachten. Pollen op
+  // een vaste tijd in plaats van per beeld, zodat het meten de beelden zelf niet nog trager maakt.
+  await page.waitForFunction(`(${jumpOf})() > 0.05`, null, { timeout: 45000, polling: 100 })
+    .catch(() => { throw new Error('Mauwtje springt niet na een tik'); });
+  await page.waitForFunction(`(${jumpOf})() === 0`, null, { timeout: 45000, polling: 100 })
+    .catch(() => { throw new Error('Mauwtje landt niet na het sprongetje'); });
+  // Slepen vanaf een kat activeert niets.
+  await reset();
+  await page.evaluate(([x, y]) => window.__house.drag(x, y, x + 120, y), [mauw.x, mauw.y]);
+  check((await events()).length === 0, 'slepen vanaf Mauwtje logde iets');
+  // Tuin (Taak 10): flyers in de lucht, het hondenhok op zijn anker, bloemen lager dan een zittende kat,
+  // en de hele tuin hooguit 25 draw calls. De tik op de verrassingen staat hieronder (Taak 9).
+  const gd = await page.evaluate(() => window.__house.garden && window.__house.garden());
+  check(gd, '__house.garden() ontbreekt');
+  console.log('tuin: ' + gd.calls + ' draw calls, ' + gd.triangles + ' driehoeken, ' + gd.flyers.length + ' flyers, bloem tot ' + gd.flowerTop.toFixed(2));
+  check(gd.flyers.length >= 1 && gd.flyers.every(f => f.inScene), 'flyers ontbreken of hangen niet in de scène: ' + JSON.stringify(gd.flyers));
+  check(gd.flyers.some(f => f.x >= 0 && f.x <= 1280 && f.y >= 0 && f.y <= 800), 'geen flyer in beeld: ' + JSON.stringify(gd.flyers));
+  check(Math.hypot(gd.doghouse.x - gd.doghouseAnchor.x, gd.doghouse.y - gd.doghouseAnchor.y, gd.doghouse.z - gd.doghouseAnchor.z) < 1e-6,
+    'hondenhok staat niet op anchors.doghouse: ' + JSON.stringify(gd));
+  check(gd.calls <= 25, 'de tuin kost ' + gd.calls + ' draw calls, verwacht hooguit 25');
+  check(gd.flowerTop < mauw.top, 'bloemen (tot ' + gd.flowerTop.toFixed(2) + ') zijn niet lager dan een zittende kat (' + mauw.top.toFixed(2) + ')');
+  // Verrassingen (Taak 9): in beeld, tikken logt surprise:<id>, slepen vanaf een verrassing logt niets.
+  const dss = await surprisesOnScreen(page, 1280, 800, 'desk 1280x800');
+  await tapSurprises(page, 'desk 1280x800');
+  for (let i = 0; i < dss.length; i++) {
+    const q = await page.evaluate((i) => { const H = window.__house; H.home(); H.events.length = 0; return H.surprises()[i]; }, i);
+    await page.evaluate(([x, y]) => window.__house.drag(x, y, x + 120, y), [q.x, q.y]);
+    const ev = await events();
+    check(ev.length === 0, 'slepen vanaf verrassing ' + q.id + ' logde ' + JSON.stringify(ev));
+  }
+  await page.evaluate(() => window.__house.home());
+  // Met het geluid aan zegt een verrassing iets (via KH.say, met de naam ingevuld).
+  {
+    const sp = await page.evaluate(() => { const H = window.__house; window.__spoken.length = 0;
+      const q = H.surprises().find(x => x.id === 'deurbel'); H.tap(q.x, q.y);
+      return { spoken: window.__spoken.slice(), has: 'speechSynthesis' in window, sound: window.KH.sound }; });
+    console.log('geluid aan, deurbel zegt: ' + JSON.stringify(sp.spoken));
+    check(!sp.has || !sp.sound || (sp.spoken.length === 1 && !sp.spoken[0].includes('{')), 'deurbel met geluid aan: ' + JSON.stringify(sp));
+  }
+  // Camera terug naar de startstand, zodat de tests hierna dezelfde kijkhoek hebben als voorheen.
+  await page.evaluate(() => document.getElementById('homeBtn').click());
+  await page.waitForTimeout(1500);
+
+  // Slepen (120 px) vanaf een kamermidden activeert niets.
+  await reset();
+  const r0 = rooms[0];
+  await page.evaluate(([x, y]) => window.__house.drag(x, y, x + 120, y), [r0.x, r0.y]);
+  const sev = await events();
+  check(sev.length === 0, 'slepen logde ' + JSON.stringify(sev));
+
+  // Na een kort sleepje (38 px, het huis draait dan zo'n 17 graden bij tot ongeveer 30 graden schuin)
+  // opent een tik op een kamer die kamer en niet de buurkamer. Getikt wordt op het midden van de
+  // kameropening (k=0) en dieper in de kamer (k=0.7, wat je door de opening ziet). Staat de eigen
+  // bewoner-kat precies daar, dan is cat:<id> ook goed; een andere kamer nooit.
+  for (const dx of [38, -38]) {
+    await page.evaluate(() => window.__house.home());
+    const az0 = (await page.evaluate(() => window.__house.info())).azimuth;
+    const c = await page.evaluate(() => ({ x: innerWidth / 2, y: innerHeight * 0.85 }));
+    await page.evaluate(([x, y, dx]) => window.__house.drag(x, y, x + dx, y), [c.x, c.y, dx]);
+    await page.evaluate(() => window.__house.settle());
+    const az1 = (await page.evaluate(() => window.__house.info())).azimuth;
+    check(Math.abs(az1 - az0) >= 12, 'sleepje ' + dx + ' px draaide maar ' + (az1 - az0) + ' graden');
+    for (const k of [0, 0.7]) {
+      const fr = await page.evaluate((k) => window.__house.fronts(k), k);
+      check(fr.length === 8, 'fronts().length is ' + fr.length);
+      for (const r of fr) {
+        await reset();
+        await page.evaluate(([x, y]) => window.__house.tap(x, y), [r.x, r.y]);
+        const ev = await events();
+        check(ev.length === 1 && (ev[0] === 'open:' + r.id || ev[0] === 'cat:' + r.id),
+          'na sleepje ' + dx + ' px (azimut ' + az1 + '): tik op kamer ' + r.id + ' (k=' + k + ') gaf ' + JSON.stringify(ev));
+      }
+    }
+    console.log('sleepje ' + dx + ' px: azimut ' + az0 + ' -> ' + az1 + ' graden, alle kamertikken goed');
+  }
+  await page.evaluate(() => window.__house.home());
+
+  // Tik op alle kamers op de huidige maat.
+  async function tapAll(label) {
+    const rs = await page.evaluate(() => window.__house.rooms());
+    check(rs.length === 8, label + ': rooms().length is ' + rs.length);
+    for (const r of rs) {
+      await reset();
+      await page.evaluate(([x, y]) => window.__house.tap(x, y), [r.x, r.y]);
+      const ev = await events();
+      check(ev.length === 1 && ev[0] === 'open:' + r.id, label + ': tik op ' + r.id + ' gaf ' + JSON.stringify(ev));
+    }
+  }
+
+  // Draaien van een iPad: naar 844x390 en terug, de tikvlakken kloppen nog.
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.waitForTimeout(300);
+  await tapAll('liggend 844x390');
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.waitForTimeout(300);
+  await tapAll('terug 1280x800');
+
+  // Terug uit een spel: pause en resume, daarna werkt een kamertik nog.
+  await page.evaluate(() => { window.__hub3d.pause(); window.__hub3d.resume(); });
+  await page.waitForTimeout(300);
+  await tapAll('na pause/resume');
+  const sz = await page.evaluate(() => { const c = document.getElementById('scene'); return { w: c.clientWidth, h: c.clientHeight }; });
+  check(sz.w === 1280 && sz.h === 800, 'canvasmaat na resume is ' + JSON.stringify(sz));
+
+  // Stap B: alle kamermodellen geladen, zonder fouten.
+  await page.waitForFunction(() => window.__house.stageB === 'done', null, { timeout: 60000, polling: 250 })
+    .catch(() => { throw new Error('stap B (modellen) niet klaar binnen 60 s'); });
+  const am = await page.evaluate(() => window.__house.assets());
+  console.log('modellen: ' + am.loaded + ' geladen, ' + am.failed + ' mislukt');
+  check(am.failed === 0, 'modellen mislukt: ' + JSON.stringify(am));
+  check(am.loaded === am.wanted && am.wanted > 0, 'niet alle modellen geladen: ' + JSON.stringify(am));
+
+  check(errors.length === 0, errors[0]);
+  await browser.close();
+
+  // Staand op een telefoon (390x844 en 360x780): het hele huis past, elk kamertikvlak is minstens
+  // 70x70 px, en de voordeur is via de ankerpunten van de huisvorm aan te tikken.
+  async function phone(W, H) {
+    const MIN = 70, tag = 'telefoon ' + W + 'x' + H;
+    const ph = await open({ width: W, height: H });
+    browser = ph.browser;
+    const pp = ph.page;
+    try { await waitReady(pp, 60000); }
+    catch { await fail(tag + ': __house.ready niet binnen 60 s' + (ph.errors.length ? ' (' + ph.errors[0] + ')' : '')); }
+    await pp.waitForFunction(() => window.__house.stageB === 'done', null, { timeout: 60000, polling: 250 })
+      .catch(() => { throw new Error(tag + ': stap B niet klaar binnen 60 s'); });
+    const hb = await pp.evaluate(() => window.__house.bounds());
+    console.log(tag + ': huis op scherm ' + JSON.stringify(hb) + ', vult ' + Math.round((hb.y1 - hb.y0) / H * 100) + '% van de hoogte');
+    check(hb.x0 >= 0 && hb.y0 >= 0 && hb.x1 <= W && hb.y1 <= H, tag + ': het huis past niet in beeld: ' + JSON.stringify(hb));
+    // De titel overlapt de knoppen niet en staat niet over het dak (de oren) bij de startcamera.
+    const ui = await pp.evaluate(() => { const r = s => { const b = document.querySelector(s).getBoundingClientRect(); return { x0: b.left, y0: b.top, x1: b.right, y1: b.bottom }; };
+      return { title: r('.title-wrap'), home: r('#homeBtn'), sound: r('#soundBtn') }; });
+    const cut = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+    console.log(tag + ': titel ' + JSON.stringify(ui.title));
+    check(!cut(ui.title, ui.home) && !cut(ui.title, ui.sound), tag + ': de titel overlapt een knop: ' + JSON.stringify(ui));
+    check(ui.title.x0 >= 0 && ui.title.x1 <= W, tag + ': de titel valt buiten beeld: ' + JSON.stringify(ui.title));
+    check(ui.title.y1 <= hb.y0, tag + ': de titel (onderkant ' + ui.title.y1 + ') staat over het dak (bovenkant ' + hb.y0 + ')');
+    // Het hondenhok staat helemaal in beeld.
+    const dh = (await pp.evaluate(() => window.__house.garden())).doghouseRect;
+    console.log(tag + ': hondenhok op scherm ' + JSON.stringify(dh));
+    check(dh.x0 >= 0 && dh.y0 >= 0 && dh.x1 <= W && dh.y1 <= H, tag + ': het hondenhok valt (deels) buiten beeld: ' + JSON.stringify(dh));
+    const prs = await pp.evaluate(() => window.__house.rooms());
+    check(prs.length === 8, tag + ': rooms().length is ' + prs.length);
+    for (const r of prs) {
+      check(r.x >= 0 && r.x <= W && r.y >= 0 && r.y <= H, tag + ': kamer ' + r.id + ' valt buiten beeld: ' + JSON.stringify(r));
+      check(r.w >= MIN && r.h >= MIN, tag + ': tikvlak ' + r.id + ' is ' + r.w + 'x' + r.h + ' px, verwacht minstens ' + MIN + 'x' + MIN);
+      await pp.evaluate(() => { window.__house.events.length = 0; document.getElementById('modal').classList.remove('open'); });
+      await pp.evaluate(([x, y]) => window.__house.tap(x, y), [r.x, r.y]);
+      const ev = await pp.evaluate(() => window.__house.events.slice());
+      check(ev.length === 1 && ev[0] === 'open:' + r.id, tag + ': tik op ' + r.id + ' gaf ' + JSON.stringify(ev));
+    }
+    console.log(tag + ': kleinste tikvlak ' + Math.min(...prs.map(r => r.w)) + 'x' + Math.min(...prs.map(r => r.h)) + ' px');
+    const an = await pp.evaluate(() => window.__house.anchors && window.__house.anchors());
+    check(an && an.door, tag + ': __house.anchors().door ontbreekt');
+    for (const k of ['doorbell', 'clock', 'birdhouse', 'mailbox', 'flowerpot', 'mauwtje', 'doghouse', 'wateringcan', 'ball'])
+      check(an[k], tag + ': anker ' + k + ' ontbreekt');
+    // Elke kat staat in beeld en reageert op een tik.
+    const pcs = await pp.evaluate(() => window.__house.cats());
+    check(pcs.length === 11, tag + ': aantal katten is ' + pcs.length);
+    for (const c of pcs) {
+      check(c.x >= 0 && c.x <= W && c.y >= 0 && c.y <= H, tag + ': kat ' + c.id + ' valt buiten beeld: ' + JSON.stringify(c));
+      await pp.evaluate(() => { window.__house.events.length = 0; document.getElementById('modal').classList.remove('open'); });
+      await pp.evaluate(([x, y]) => window.__house.tap(x, y), [c.x, c.y]);
+      const ev = await pp.evaluate(() => window.__house.events.slice());
+      const want = c.id === 'mauwtje' ? 'surprise:mauwtje' : 'cat:' + c.id;
+      check(ev.length === 1 && ev[0] === want, tag + ': tik op kat ' + c.id + ' gaf ' + JSON.stringify(ev));
+    }
+    // Tuin: minstens één flyer staat staand op de telefoon in beeld.
+    const pg = await pp.evaluate(() => window.__house.garden());
+    check(pg.flyers.some(f => f.x >= 0 && f.x <= W && f.y >= 0 && f.y <= H), tag + ': geen flyer in beeld: ' + JSON.stringify(pg.flyers));
+    console.log(tag + ': tuin ' + pg.calls + ' draw calls, flyers in beeld ' + pg.flyers.filter(f => f.x >= 0 && f.x <= W && f.y >= 0 && f.y <= H).length + '/' + pg.flyers.length);
+    // Verrassingen: allemaal in beeld en aan te tikken.
+    await surprisesOnScreen(pp, W, H, tag);
+    await tapSurprises(pp, tag);
+    await pp.evaluate(() => { window.__house.home(); window.__house.events.length = 0; });
+    await pp.evaluate(([x, y]) => window.__house.tap(x, y), [an.door.x, an.door.y]);
+    const pdev = await pp.evaluate(() => window.__house.events.slice());
+    check(pdev.length === 1 && pdev[0] === 'door', tag + ': tik op de deur (anker) gaf ' + JSON.stringify(pdev));
+    // De ruime tikvlakken van deurbel en bloempot pikken geen tik op de deur of de kamers ernaast in.
+    // Deur: op 25% en 40% van de deurbreedte links en rechts van het midden, op drie hoogtes.
+    // (Deur: halve breedte 0,66, vloer op 0,55, voorkant gevel 1,2.)
+    const tapAt = (x, y) => pp.evaluate(([x, y]) => { const H = window.__house; H.home(); H.events.length = 0;
+      document.getElementById('modal').classList.remove('open'); H.tap(x, y); return H.events.slice(); }, [x, y]);
+    const proj = (x, y, z) => pp.evaluate(([x, y, z]) => window.__house.project(x, y, z), [x, y, z]);
+    for (const f of [-0.4, -0.25, 0.25, 0.4]) for (const dy of [0.25, 0.75, 1.2]) {
+      const q = await proj(f * 1.32, 0.55 + dy, 1.2);
+      const ev = await tapAt(q.x, q.y);
+      check(ev.length === 1 && ev[0] === 'door', tag + ': tik op de deur op ' + Math.round(f * 100) + '% (hoogte ' + dy + ', ' + q.x + ',' + q.y + ') gaf ' + JSON.stringify(ev));
+    }
+    // Kamers naast de deur: een tik op de onderste strook, vlak bij de deurbel en de bloempot.
+    const low = (await pp.evaluate(() => window.__house.rooms())).sort((a, b) => b.y - a.y).slice(0, 2).sort((a, b) => a.x - b.x);
+    for (const [r, sx] of [[low[0], -1], [low[1], 1]]) for (const [dx, dy] of [[1.35, 0.15], [1.35, 0.6], [1.5, 1.0]]) {
+      const q = await proj(sx * dx, 0.55 + dy, 1.2);
+      const ev = await tapAt(q.x, q.y);
+      check(ev.length === 1 && ev[0] === 'open:' + r.id, tag + ': tik op de onderkant van ' + r.id + ' (' + q.x + ',' + q.y + ') gaf ' + JSON.stringify(ev));
+    }
+    // De zichtbare deurbel zelf blijft de deurbel.
+    const bq = await pp.evaluate(() => { window.__house.home(); return window.__house.anchors().doorbell; });
+    check(await pp.evaluate(([x, y]) => window.__house.pickAt(x, y), [bq.x, bq.y]) === 'surprise:deurbel', tag + ': tik op de deurbel zelf gaf geen deurbel');
+    await pp.evaluate(() => { window.__house.events.length = 0; document.getElementById('modal').classList.remove('open'); });
+    console.log(tag + ': deur op 25% en 40% (links en rechts) is de deur, onderkant buurkamers is de kamer');
+    // De adresbalk van een telefoon verschijnt of verdwijnt (alleen de hoogte verandert een beetje):
+    // de draaiing en de zoom van het kind blijven staan.
+    await pp.evaluate(() => window.__house.home());
+    await pp.evaluate(([x, y]) => window.__house.drag(x, y, x + 40, y), [W / 2, H * 0.85]);
+    await pp.mouse.move(W / 2, H / 2);
+    await pp.mouse.wheel(0, -300);
+    await pp.waitForTimeout(200);
+    const c0 = await pp.evaluate(() => { window.__house.settle(); return window.__house.cam(); });
+    await pp.setViewportSize({ width: W, height: H - 80 });
+    await pp.waitForTimeout(400);
+    const c1 = await pp.evaluate(() => { window.__house.settle(); return window.__house.cam(); });
+    console.log(tag + ': adresbalk ' + H + ' -> ' + (H - 80) + ' px: camera ' + JSON.stringify(c0) + ' -> ' + JSON.stringify(c1));
+    check(c0.distance < c0.home * 0.97, tag + ': inzoomen met het wieltje werkte niet: ' + JSON.stringify(c0));
+    check(Math.abs(c1.azimuth - c0.azimuth) < 0.5 && Math.abs(c1.distance / c0.distance - 1) < 0.01,
+      tag + ': de adresbalk zette de camera terug: ' + JSON.stringify([c0, c1]));
+    // En terug naar de volle hoogte vanaf de startstand: het huis past dan nog steeds.
+    await pp.evaluate(() => window.__house.home());
+    await pp.setViewportSize({ width: W, height: H });
+    await pp.waitForTimeout(400);
+    const hb2 = await pp.evaluate(() => { window.__house.settle(); window.__house.frame(); return window.__house.bounds(); });
+    check(hb2.x0 >= 0 && hb2.y0 >= 0 && hb2.x1 <= W && hb2.y1 <= H, tag + ': na de adresbalk past het huis niet meer: ' + JSON.stringify(hb2));
+    check(ph.errors.length === 0, tag + ': ' + ph.errors[0]);
+    await browser.close();
+  }
+  await phone(390, 844);
+  await phone(360, 780);
+
+  // Draaien van liggend naar staand: de camera komt weer op passende afstand en het hele huis
+  // staat in beeld. Dit loopt door dezelfde code als zonder testmodus (geen sprong naar camEnd).
+  {
+    const rt = await open({ width: 844, height: 390 });
+    browser = rt.browser;
+    const rp = rt.page;
+    try { await waitReady(rp, 60000); }
+    catch { await fail('draaien: __house.ready niet binnen 60 s'); }
+    await rp.setViewportSize({ width: 390, height: 844 });
+    await rp.waitForTimeout(800);
+    const rb = await rp.evaluate(() => { window.__house.frame(); return window.__house.bounds(); });
+    console.log('draaien 844x390 -> 390x844: huis op scherm ' + JSON.stringify(rb));
+    check(rb.x0 >= 0 && rb.y0 >= 0 && rb.x1 <= 390 && rb.y1 <= 844, 'draaien: het huis past na liggend naar staand niet in beeld: ' + JSON.stringify(rb));
+    check(rt.errors.length === 0, 'draaien: ' + rt.errors[0]);
+    await browser.close();
+  }
+
+  // Geluid uit (localStorage.kh_sound = 'uit'): een verrassing beweegt wel, maar speak wordt 0 keer aangeroepen.
+  {
+    const so = await open({ width: 1280, height: 800 }, 'debug=1&q=low', speechStubOff);
+    browser = so.browser;
+    const sp = so.page;
+    try { await waitReady(sp, 60000); }
+    catch { await fail('geluid uit: __house.ready niet binnen 60 s'); }
+    await sp.waitForFunction(() => window.__house.stageB === 'done', null, { timeout: 60000, polling: 250 })
+      .catch(() => { throw new Error('geluid uit: stap B niet klaar binnen 60 s'); });
+    check(await sp.evaluate(() => window.KH.sound) === false, 'geluid uit: KH.sound staat niet uit');
+    await tapSurprises(sp, 'geluid uit');
+    const spoken = await sp.evaluate(() => window.__spoken.slice());
+    check(spoken.length === 0, 'geluid uit: speak werd ' + spoken.length + ' keer aangeroepen: ' + JSON.stringify(spoken));
+    console.log('geluid uit: alle verrassingen bewegen, speak 0 keer aangeroepen');
+    check(so.errors.length === 0, 'geluid uit: ' + so.errors[0]);
+    await browser.close();
+  }
+
+  // De hoge stand (?q=high: schaduw aan, governor vast) met alles geladen: het budget is hard, ook met de
+  // schaduwpas meegeteld (renderer.info telt die normaal niet), en de twee PointLights staan aan.
+  {
+    const hi = await open({ width: 390, height: 844 }, 'debug=1&q=high');
+    browser = hi.browser;
+    const hp = hi.page;
+    try { await waitReady(hp, 120000); }
+    catch { await fail('hoge stand: __house.ready niet binnen 120 s'); }
+    await hp.waitForFunction(() => window.__house.stageB === 'done', null, { timeout: 120000, polling: 500 })
+      .catch(() => { throw new Error('hoge stand: stap B niet klaar binnen 120 s'); });
+    // Op drie schermen; de breedte verandert telkens meer dan 10%, dus de camera past zich opnieuw aan.
+    for (const [w, h] of [[390, 844], [1280, 800], [360, 780]]) {
+      if (w !== 390) { await hp.setViewportSize({ width: w, height: h }); await hp.waitForTimeout(800); }
+      const b = await hp.evaluate(() => { window.__house.home(); return window.__house.budget(); });
+      const vt = 'budget high ' + w + 'x' + h;
+      console.log(vt + ': ' + JSON.stringify(b));
+      check(b.tier === 'high' && b.shadow, vt + ': verwacht tier high met schaduw: ' + JSON.stringify(b));
+      check(b.calls <= 150 && b.triangles <= 150000, vt + ' (hoofdpas) te hoog: ' + JSON.stringify(b));
+      check(b.totalCalls <= 150 && b.totalTriangles <= 150000, vt + ' (met schaduwpas) te hoog: ' + JSON.stringify(b));
+    }
+    const hl = await hp.evaluate(() => window.__house.lights());
+    check(hl.pointOn === 2, 'hoge stand: verwacht 2 PointLights aan, kreeg ' + JSON.stringify(hl));
+    check(hi.errors.length === 0, 'hoge stand: ' + hi.errors[0]);
+    await browser.close();
+  }
+
+  // Modellen die niet laden (?failmodels=1) breken het huis niet.
+  {
+    const f = await open({ width: 1280, height: 800 }, 'debug=1&q=low&failmodels=1');
+    browser = f.browser;
+    const fp = f.page;
+    try { await waitReady(fp, 60000); }
+    catch { await fail('failmodels: __house.ready niet binnen 60 s' + (f.errors.length ? ' (' + f.errors[0] + ')' : '')); }
+    await fp.waitForFunction(() => window.__house.stageB === 'done', null, { timeout: 60000, polling: 250 })
+      .catch(() => { throw new Error('failmodels: stap B niet afgerond'); });
+    const fa = await fp.evaluate(() => window.__house.assets && window.__house.assets());
+    check(fa && fa.failmodels === true && fa.loaded === 0, 'failmodels: vlag werkt niet: ' + JSON.stringify(fa));
+    const frs = await fp.evaluate(() => window.__house.rooms());
+    check(frs.length === 8, 'failmodels: rooms().length is ' + frs.length);
+    for (const r of frs) {
+      await fp.evaluate(() => { window.__house.events.length = 0; document.getElementById('modal').classList.remove('open'); });
+      await fp.evaluate(([x, y]) => window.__house.tap(x, y), [r.x, r.y]);
+      const ev = await fp.evaluate(() => window.__house.events.slice());
+      check(ev.length === 1 && ev[0] === 'open:' + r.id, 'failmodels: tik op ' + r.id + ' gaf ' + JSON.stringify(ev));
+    }
+    const fcats = await fp.evaluate(() => window.__house.cats());
+    check(fcats.length === 11, 'failmodels: aantal katten is ' + fcats.length + ', verwacht 11');
+    check(f.errors.length === 0, 'failmodels: ' + f.errors[0]);
+    await browser.close();
+  }
+
+  console.log('SMOKE OK');
+} catch (e) {
+  await fail(e.message);
+}
