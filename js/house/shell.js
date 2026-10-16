@@ -464,7 +464,7 @@ export function buildShell(scene) {
     doorbell: v(DOOR_W + 0.3, Y0 + 0.95, FRONT + 0.02),
     clock: v(0, HEAD_Y + 1.9, FRONT + 0.02),
     birdhouse: v(0, HEAD_Y + HEAD_RY + 0.15, 0.1),
-    flowerpot: v(-0.95, 0.3, 1.42),
+    flowerpot: v(-0.78, GROUND, 2.05),
     mauwtje: v(2.55, GROUND, 2.45),
     // De tuinverrassingen staan dicht genoeg bij het huis om bij de startcamera op telefoon
     // (staand) en desktop (liggend) in beeld te staan, naast het pad en niet voor de deur.

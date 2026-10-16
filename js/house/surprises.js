@@ -67,6 +67,9 @@ function localBox(object) {
 // groot tikvlak naast een klein object de deur of een kamer niet hoeft te bedekken. Met floor begint het tikvlak op de
 // onderkant van het object en groeit het alleen omhoog: dan bedekt het niet de grond ervoor, waar een tuinkat kan zitten.
 // Maat: TAP is ongeveer 44 px op een telefoon van 360 px breed (staand, startcamera).
+// Waar het ruime tikvlak over de deur, een kat of een kamer valt, gaan die voor (input.js); alleen het zichtbare
+// ding zelf gaat altijd voor. Daarom schuiven hond, gieter en Mauwtje hun tikvlak weg van de kamers ernaast, en
+// staat de bloempot op het gras voor de sokkel. De deurbel zit in de smalle strook tussen deur en kamer.
 const TAP = 1.35;
 function hitBox(object, min, shift, floor) {
   const box = localBox(object), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
@@ -201,7 +204,7 @@ export function addSurprises(scene, anchors) {
 
   // Mauwtje: springt op, miauwt (reactCat) en zegt iets liefs.
   const mauwtje = scene.getObjectByName('cat-mauwtje');
-  if (mauwtje) register('mauwtje', mauwtje, { dur: 0.5, min: [TAP / 0.95, TAP / 0.95, 0.6], floor: true, step() {}, start() { reactCat(mauwtje); } });
+  if (mauwtje) register('mauwtje', mauwtje, { dur: 0.5, min: [TAP * 1.12 / 0.95, TAP / 0.95, 0.6], floor: true, shift: [0, -0.45, 0], step() {}, start() { reactCat(mauwtje); } });
 
   // Deurbel: knopje gaat in, ding-dong, en de voordeur gaat even open (scharnier links).
   {
@@ -281,7 +284,7 @@ export function addSurprises(scene, anchors) {
   {
     const doghouse = part_('doghouse'), dog = part_('dog');
     const z0 = dog.userData.baseZ ?? dog.position.z, y0 = dog.position.y;
-    register('hond', doghouse, { dur: 1.4, floor: true, shift: [0, 0.1, 0], step(k) {
+    register('hond', doghouse, { dur: 1.4, min: [TAP * 1.1, TAP, 0.6], floor: true, shift: [-0.35 * Math.cos(0.4), 0.1, -0.35 * Math.sin(0.4)], step(k) {
       const out = env(k, 0.2, 0.75);
       dog.position.z = z0 + out * 0.18;
       dog.position.y = y0 + Math.abs(Math.sin(k * Math.PI * 4)) * 0.05 * out;
@@ -304,7 +307,8 @@ export function addSurprises(scene, anchors) {
     });
     const flowers = mesh(fp, 'wateringcan-flowers', { visible: false });
     const DUR = 6;
-    register('gieter', can, { dur: DUR, floor: true, step(k) {
+    // Het tikvlak schuift naar rechts (in wereldrichting +x, de gieter staat 0,5 gedraaid), weg van de kamer ernaast.
+    register('gieter', can, { dur: DUR, min: [TAP * 1.3, TAP, 0.6], floor: true, shift: [0.6 * Math.cos(0.5), 0, 0.6 * Math.sin(0.5)], step(k) {
       const s = k * DUR;   // seconden sinds de tik
       // kantelen om de onderrand aan de kant van de tuit (px), zodat de gieter niet in het gras zakt
       const th = -0.45 * env(s / 2, 0.25, 0.75), px = 0.17;
@@ -323,7 +327,7 @@ export function addSurprises(scene, anchors) {
   {
     const ball = part_('ball'), body = ball.children[0];
     const base = ball.position.clone(), dir = new THREE.Vector3(-0.8, 0, 0.6).normalize(), R = 0.2;
-    register('voetbal', ball, { dur: 1.8, floor: true, step(k) {
+    register('voetbal', ball, { dur: 1.8, floor: true, shift: [0.2, 0, 0], step(k) {
       const d = 0.9 * bump(k);
       ball.position.set(base.x + dir.x * d, base.y + Math.abs(Math.sin(k * Math.PI * 3)) * 0.4 * (1 - k), base.z + dir.z * d);
       body.rotation.set(d / R * dir.z, 0, -d / R * dir.x);

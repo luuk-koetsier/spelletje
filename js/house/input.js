@@ -1,9 +1,12 @@
 /* Aanwijzen en tikken in het 3D-huis.
    Een tik telt alleen als die korter is dan 450 ms en minder dan 7 px beweegt; alles daarboven is
    draaien (dat doet OrbitControls) en activeert niets.
-   Volgorde bij een tik: verrassing, kat, deur, kamer. Een verrassing gaat altijd voor, ook als er
-   iets anders dichterbij ligt; een tik op een verrassing opent dus nooit een kamer. Voor de rest
-   telt wat het dichtst bij ligt, met één uitzondering: een bewoner-kat gaat voor zijn eigen kamer
+   Volgorde bij een tik: eerst een verrassing waarvan je het zichtbare ding zelf raakt (een tik op
+   een verrassing opent dus nooit een kamer). Dan kat, deur of kamer. Pas als die er niet zijn telt
+   het ruime, onzichtbare tikvlak van een verrassing: zo pikt dat vlak nooit een tik op de deur, een
+   kat of een kamer in. Mauwtje is een kat en een verrassing tegelijk; een tik op zijn kattentikvlak
+   is zijn verrassing. Voor de rest telt wat het dichtst bij ligt, met één uitzondering: een
+   bewoner-kat gaat voor zijn eigen kamer
    (zijn tikvlak ligt achter de kameropening). Een kat van een andere kamer telt dan niet, zodat een
    schuin gedraaid huis nooit de buurkamer of zijn kat raakt. */
 import * as THREE from 'three';
@@ -30,9 +33,32 @@ export function attachInput(canvas, camera, controls, targets, handlers, opts = 
   function pick(clientX, clientY) {
     ndc.x = (clientX / innerWidth) * 2 - 1; ndc.y = -(clientY / innerHeight) * 2 + 1;
     raycaster.setFromCamera(ndc, camera);
-    const hits = raycaster.intersectObjects(hitList(), false);
-    const sh = hits.find(h => surpriseOf.has(h.object));
-    if (sh) return { kind: 'surprise', target: surpriseOf.get(sh.object), object: sh.object };
+    const all = raycaster.intersectObjects(hitList(), false);
+    const sHits = all.filter(h => surpriseOf.has(h.object));
+    // 1. Het zichtbare ding van een verrassing zelf.
+    for (const h of sHits) if (seen(surpriseOf.get(h.object))) return { kind: 'surprise', target: surpriseOf.get(h.object), object: h.object };
+    // 2. Kat, deur of kamer.
+    const other = pickOther(all.filter(h => !surpriseOf.has(h.object)));
+    if (other) {
+      const s = other.kind === 'cat' && targets.surprises.find(q => q.object === other.target);
+      return s ? { kind: 'surprise', target: s, object: s.hit } : other;
+    }
+    // 3. Het ruime tikvlak van een verrassing. Overlappen er twee, dan wint het ding waarvan het midden
+    //    (gezien vanaf de camera) het dichtst bij de tik ligt, zodat elk ding zijn eigen helft houdt.
+    if (sHits.length) {
+      let best = null, bd = Infinity;
+      for (const h of sHits) {
+        h.object.getWorldPosition(tmp);
+        const along = tmp.clone().sub(raycaster.ray.origin).dot(raycaster.ray.direction);
+        const d = raycaster.ray.distanceSqToPoint(tmp) / Math.max(along * along, 1e-6);
+        if (d < bd) { bd = d; best = h; }
+      }
+      return { kind: 'surprise', target: surpriseOf.get(best.object), object: best.object };
+    }
+    return null;
+  }
+  const tmp = new THREE.Vector3();
+  function pickOther(hits) {
     const first = hits[0];
     if (!first) return null;
     const u = first.object.userData;
@@ -45,6 +71,14 @@ export function attachInput(canvas, camera, controls, targets, handlers, opts = 
     if (u.doorHit) return { kind: 'door', target: null, object: first.object };
     return null;
   }
+  // Raakt de straal het zichtbare ding van een verrassing (niet zijn tikvlak of schaduwvlekje)?
+  const visibleHit = h => {
+    const o = h.object, m = o.material;
+    if (!o.visible || (m && m.transparent && m.opacity === 0) || (m && m.alphaMap)) return false;
+    for (let a = o; a; a = a.parent) if (!a.visible) return false;
+    return true;
+  };
+  function seen(s) { return raycaster.intersectObject(s.object, true).some(h => h.object !== s.hit && visibleHit(h)); }
 
   function showTip(text, e) {
     tip.textContent = text; tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px'; tip.style.opacity = '1';

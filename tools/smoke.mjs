@@ -34,10 +34,19 @@ async function surprisesOnScreen(pg, W, H, tag) {
   // Op een telefoon (staand) is elk tikvlak minstens 44 px: 22 px links, rechts, boven en onder het tikpunt
   // raakt nog dezelfde verrassing. (Niet voor de ballonnen: die zweven en zijn al groot. Op een groot scherm
   // zijn de spullen zelf groter, daar telt alleen de tik op het midden.)
+  // De deurbel zit in de smalle strook tussen de deur en de kamer ernaast: die twee gaan voor zijn ruime
+  // tikvlak, dus daar telt alleen de hoogte (44 px), en links en rechts moeten de deur en de kamer liggen.
   const R = 22;
   for (const q of W <= 430 ? ss.filter(q => q.id !== 'lucht') : []) {
     const got = await pg.evaluate(([x, y, R]) => [[x - R, y], [x + R, y], [x, y - R], [x, y + R]].map(([a, b]) => window.__house.pickAt(a, b)), [q.x, q.y, R]);
-    check(got.every(g => g === 'surprise:' + q.id), tag + ': tikvlak van ' + q.id + ' is kleiner dan 44 px: ' + JSON.stringify(got));
+    const me = 'surprise:' + q.id;
+    if (q.id === 'deurbel') {
+      check(got[0] === 'door' && /^(room|cat):/.test(got[1]) && got[2] === me && got[3] === me, tag + ': deurbel: verwacht [door, kamer of zijn kat, bel, bel], kreeg ' + JSON.stringify(got));
+      const w = await pg.evaluate(([x, y]) => { let a = x, b = x; while (window.__house.pickAt(a - 1, y) === 'surprise:deurbel') a--;
+        while (window.__house.pickAt(b + 1, y) === 'surprise:deurbel') b++; return b - a + 1; }, [q.x, q.y]);
+      console.log(tag + ': deurbel ' + w + ' px breed (tussen deur en kamer), 44 px hoog');
+      check(w >= 10, tag + ': deurbel is maar ' + w + ' px breed');
+    } else check(got.every(g => g === me), tag + ': tikvlak van ' + q.id + ' is kleiner dan 44 px: ' + JSON.stringify(got));
   }
   return ss;
 }
@@ -198,10 +207,11 @@ try {
   await reset();
   await page.evaluate(([x, y]) => window.__house.tap(x, y), [mauw.x, mauw.y]);
   const jumpOf = () => window.__house.cats().find(c => c.id === 'mauwtje').jumpY;
-  // SwiftShader haalt hier soms maar één beeld per seconde (of minder), dus ruim wachten.
-  await page.waitForFunction(`(${jumpOf})() > 0.05`, null, { timeout: 15000, polling: 'raf' })
+  // SwiftShader haalt hier soms maar één beeld per drie seconden (of minder), dus ruim wachten. Pollen op
+  // een vaste tijd in plaats van per beeld, zodat het meten de beelden zelf niet nog trager maakt.
+  await page.waitForFunction(`(${jumpOf})() > 0.05`, null, { timeout: 45000, polling: 100 })
     .catch(() => { throw new Error('Mauwtje springt niet na een tik'); });
-  await page.waitForFunction(`(${jumpOf})() === 0`, null, { timeout: 20000, polling: 100 })
+  await page.waitForFunction(`(${jumpOf})() === 0`, null, { timeout: 45000, polling: 100 })
     .catch(() => { throw new Error('Mauwtje landt niet na het sprongetje'); });
   // Slepen vanaf een kat activeert niets.
   await reset();
@@ -375,6 +385,29 @@ try {
     await pp.evaluate(([x, y]) => window.__house.tap(x, y), [an.door.x, an.door.y]);
     const pdev = await pp.evaluate(() => window.__house.events.slice());
     check(pdev.length === 1 && pdev[0] === 'door', tag + ': tik op de deur (anker) gaf ' + JSON.stringify(pdev));
+    // De ruime tikvlakken van deurbel en bloempot pikken geen tik op de deur of de kamers ernaast in.
+    // Deur: op 25% en 40% van de deurbreedte links en rechts van het midden, op drie hoogtes.
+    // (Deur: halve breedte 0,66, vloer op 0,55, voorkant gevel 1,2.)
+    const tapAt = (x, y) => pp.evaluate(([x, y]) => { const H = window.__house; H.home(); H.events.length = 0;
+      document.getElementById('modal').classList.remove('open'); H.tap(x, y); return H.events.slice(); }, [x, y]);
+    const proj = (x, y, z) => pp.evaluate(([x, y, z]) => window.__house.project(x, y, z), [x, y, z]);
+    for (const f of [-0.4, -0.25, 0.25, 0.4]) for (const dy of [0.25, 0.75, 1.2]) {
+      const q = await proj(f * 1.32, 0.55 + dy, 1.2);
+      const ev = await tapAt(q.x, q.y);
+      check(ev.length === 1 && ev[0] === 'door', tag + ': tik op de deur op ' + Math.round(f * 100) + '% (hoogte ' + dy + ', ' + q.x + ',' + q.y + ') gaf ' + JSON.stringify(ev));
+    }
+    // Kamers naast de deur: een tik op de onderste strook, vlak bij de deurbel en de bloempot.
+    const low = (await pp.evaluate(() => window.__house.rooms())).sort((a, b) => b.y - a.y).slice(0, 2).sort((a, b) => a.x - b.x);
+    for (const [r, sx] of [[low[0], -1], [low[1], 1]]) for (const [dx, dy] of [[1.35, 0.15], [1.35, 0.6], [1.5, 1.0]]) {
+      const q = await proj(sx * dx, 0.55 + dy, 1.2);
+      const ev = await tapAt(q.x, q.y);
+      check(ev.length === 1 && ev[0] === 'open:' + r.id, tag + ': tik op de onderkant van ' + r.id + ' (' + q.x + ',' + q.y + ') gaf ' + JSON.stringify(ev));
+    }
+    // De zichtbare deurbel zelf blijft de deurbel.
+    const bq = await pp.evaluate(() => { window.__house.home(); return window.__house.anchors().doorbell; });
+    check(await pp.evaluate(([x, y]) => window.__house.pickAt(x, y), [bq.x, bq.y]) === 'surprise:deurbel', tag + ': tik op de deurbel zelf gaf geen deurbel');
+    await pp.evaluate(() => { window.__house.events.length = 0; document.getElementById('modal').classList.remove('open'); });
+    console.log(tag + ': deur op 25% en 40% (links en rechts) is de deur, onderkant buurkamers is de kamer');
     // De adresbalk van een telefoon verschijnt of verdwijnt (alleen de hoogte verandert een beetje):
     // de draaiing en de zoom van het kind blijven staan.
     await pp.evaluate(() => window.__house.home());
@@ -447,11 +480,16 @@ try {
     catch { await fail('hoge stand: __house.ready niet binnen 120 s'); }
     await hp.waitForFunction(() => window.__house.stageB === 'done', null, { timeout: 120000, polling: 500 })
       .catch(() => { throw new Error('hoge stand: stap B niet klaar binnen 120 s'); });
-    const b = await hp.evaluate(() => { window.__house.home(); return window.__house.budget(); });
-    console.log('budget high: ' + JSON.stringify(b));
-    check(b.tier === 'high' && b.shadow, 'hoge stand: verwacht tier high met schaduw: ' + JSON.stringify(b));
-    check(b.calls <= 150 && b.triangles <= 150000, 'budget high (hoofdpas) te hoog: ' + JSON.stringify(b));
-    check(b.totalCalls <= 150 && b.totalTriangles <= 150000, 'budget high (met schaduwpas) te hoog: ' + JSON.stringify(b));
+    // Op drie schermen; de breedte verandert telkens meer dan 10%, dus de camera past zich opnieuw aan.
+    for (const [w, h] of [[390, 844], [1280, 800], [360, 780]]) {
+      if (w !== 390) { await hp.setViewportSize({ width: w, height: h }); await hp.waitForTimeout(800); }
+      const b = await hp.evaluate(() => { window.__house.home(); return window.__house.budget(); });
+      const vt = 'budget high ' + w + 'x' + h;
+      console.log(vt + ': ' + JSON.stringify(b));
+      check(b.tier === 'high' && b.shadow, vt + ': verwacht tier high met schaduw: ' + JSON.stringify(b));
+      check(b.calls <= 150 && b.triangles <= 150000, vt + ' (hoofdpas) te hoog: ' + JSON.stringify(b));
+      check(b.totalCalls <= 150 && b.totalTriangles <= 150000, vt + ' (met schaduwpas) te hoog: ' + JSON.stringify(b));
+    }
     const hl = await hp.evaluate(() => window.__house.lights());
     check(hl.pointOn === 2, 'hoge stand: verwacht 2 PointLights aan, kreeg ' + JSON.stringify(hl));
     check(hi.errors.length === 0, 'hoge stand: ' + hi.errors[0]);
