@@ -81,7 +81,9 @@ export function roomBuilder(slot, kit) {
     // schaduwvlekje op de vloer (ellips rx bij rz)
     blob(x, z, rx, rz = rx, y = 0.006) { blobs.push(mat(x, y, z, 0, 0, 0, rx, 1, rz)); },
     // Een KayKit-model op de kamervloer. Geeft false als het model er niet is (niet geladen).
-    model(name, { x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, s = 1, cast = true } = {}) {
+    // Modellen in een kamer werpen standaard geen echte schaduw: de kamer staat grotendeels in de
+    // schaduw van de gevel, en de schaduwvlekjes (blob) doen het werk. Dat scheelt de schaduwpas veel.
+    model(name, { x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, s = 1, cast = false } = {}) {
       const c = kit.cloneModel(name);
       if (!c) return false;
       c.position.set(x, y, z); c.rotation.set(rx, ry, rz); c.scale.setScalar(s);

@@ -247,12 +247,22 @@ function drawBadges(cv) {
 }
 
 // ── bouwen ──
+// Knipperen van de ogen in de gevel: geeft de verticale schaal van de ogen op tijdstip t (seconden).
+// Ongeveer elke 4,3 s een knipper van 0,18 s, en elke derde keer twee knippers achter elkaar.
+const BLINK_P = 4.3, BLINK_D = 0.18;
+export function blinkAt(t) {
+  const n = Math.floor(t / BLINK_P), k = t - n * BLINK_P;
+  const one = x => (x >= 0 && x < BLINK_D ? 1 - 0.9 * Math.sin(x / BLINK_D * Math.PI) : 1);
+  return Math.min(one(k - 3), n % 3 === 2 ? one(k - 3.3) : 1);
+}
+
 export function buildShell(scene) {
+  let eyes = null;
   const group = new THREE.Group();
   group.name = 'shell';
   const toyMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0 });
   const softMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0 });
-  const toyParts = [], innerParts = [], wallParts = [], floorParts = [], badgeParts = [], doorParts = [];
+  const toyParts = [], innerParts = [], wallParts = [], floorParts = [], badgeParts = [], doorParts = [], eyeParts = [];
 
   // Gevel: het lijf met openingen voor de acht kamers en de voordeur.
   const cells = [];
@@ -266,12 +276,12 @@ export function buildShell(scene) {
   front.holes.push(doorPath(new THREE.Path(), DOOR_W + BEV, Y0 + DOOR_SPRING, Y0 - BEV));
   {
     const depth = FRONT - ZF - 2 * BEV;
-    const g = new THREE.ExtrudeGeometry(front, { depth, bevelEnabled: true, bevelThickness: BEV, bevelSize: BEV, bevelSegments: 2, curveSegments: 7 });
+    const g = new THREE.ExtrudeGeometry(front, { depth, bevelEnabled: true, bevelThickness: BEV, bevelSize: BEV, bevelSegments: 2, curveSegments: 5 });
     toyParts.push(prep(g, COL.frame, mat(0, 0, ZF + BEV)));
   }
   // Witte lijsten rond de kamers en de deur.
   {
-    const TR = 0.11, opts = { depth: 0.03, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 1, curveSegments: 5 };
+    const TR = 0.11, opts = { depth: 0.03, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 1, curveSegments: 4 };
     for (const { i, j } of cells) {
       const x = colX(i), y = floorY(j);
       const sh = roundRect(new THREE.Shape(), x - CW / 2 - TR, y - TR, x + CW / 2 + TR, y + CH - LINTEL + TR, 0.38);
@@ -290,13 +300,13 @@ export function buildShell(scene) {
     const h = new THREE.Shape();
     h.moveTo(0, -0.9); h.bezierCurveTo(-0.3, -0.55, -1.1, -0.2, -1.1, 0.35); h.bezierCurveTo(-1.1, 0.85, -0.45, 1.05, 0, 0.6);
     h.bezierCurveTo(0.45, 1.05, 1.1, 0.85, 1.1, 0.35); h.bezierCurveTo(1.1, -0.2, 0.3, -0.55, 0, -0.9);
-    const g = new THREE.ExtrudeGeometry(h, { depth: 0.04, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 3, curveSegments: 16 });
+    const g = new THREE.ExtrudeGeometry(h, { depth: 0.04, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 2, curveSegments: 10 });
     toyParts.push(prep(g, COL.frame, mat(0, 4.4, ZBACK - 0.04, 0, Math.PI, 0)));
   }
   // Kop: koepel met wangen, iets breder dan het lijf, zodat hij als een dakrand overhangt.
   {
     const depth = FRONT - ZBACK + 0.2 - 0.3;
-    const g = new THREE.ExtrudeGeometry(headShape(), { depth, bevelEnabled: true, bevelThickness: 0.15, bevelSize: 0.15, bevelSegments: 3, curveSegments: 28 });
+    const g = new THREE.ExtrudeGeometry(headShape(), { depth, bevelEnabled: true, bevelThickness: 0.15, bevelSize: 0.15, bevelSegments: 2, curveSegments: 18 });
     toyParts.push(prep(g, COL.head, mat(0, 0, ZBACK - 0.2 + 0.15)));
   }
   // Oren met roze binnenkant.
@@ -309,12 +319,13 @@ export function buildShell(scene) {
   }
   // Gezichtje in de gevel van de kop.
   {
-    const sph = () => new THREE.SphereGeometry(1, 16, 10);
+    const sph = () => new THREE.SphereGeometry(1, 14, 8);
     const fz = FRONT + 0.02, ey = HEAD_Y + 0.9, ex = 1.35;
+    // De ogen (met glimmertjes) zijn een eigen mesh rond hun middenlijn, zodat ze kunnen knipperen (blinkAt).
     for (const sgn of [-1, 1]) {
-      toyParts.push(prep(sph(), COL.eye, mat(sgn * ex, ey, fz, 0, 0, 0, 0.38, 0.46, 0.14)));
-      toyParts.push(prep(sph(), '#ffffff', mat(sgn * ex + 0.12, ey + 0.17, fz + 0.12, 0, 0, 0, 0.12, 0.12, 0.05)));
-      toyParts.push(prep(sph(), '#ffffff', mat(sgn * ex - 0.11, ey - 0.18, fz + 0.12, 0, 0, 0, 0.055, 0.055, 0.03)));
+      eyeParts.push(prep(sph(), COL.eye, mat(sgn * ex, 0, 0, 0, 0, 0, 0.38, 0.46, 0.14)));
+      eyeParts.push(prep(sph(), '#ffffff', mat(sgn * ex + 0.12, 0.17, 0.12, 0, 0, 0, 0.12, 0.12, 0.05)));
+      eyeParts.push(prep(sph(), '#ffffff', mat(sgn * ex - 0.11, -0.18, 0.12, 0, 0, 0, 0.055, 0.055, 0.03)));
       toyParts.push(prep(sph(), COL.cheek, mat(sgn * 2.4, HEAD_Y + 0.28, fz - 0.01, 0, 0, 0, 0.44, 0.3, 0.06)));
       toyParts.push(prep(new THREE.TorusGeometry(0.17, 0.04, 8, 16, Math.PI), COL.eye, mat(sgn * 0.17, HEAD_Y + 0.42, fz + 0.09, 0, 0, Math.PI)));
       for (const [dy, rz] of [[0.48, 0.1], [0.24, -0.06]]) {
@@ -323,21 +334,23 @@ export function buildShell(scene) {
     }
     toyParts.push(prep(sph(), COL.muzzle, mat(0, HEAD_Y + 0.38, fz - 0.02, 0, 0, 0, 0.78, 0.44, 0.08)));
     toyParts.push(prep(sph(), COL.nose, mat(0, HEAD_Y + 0.6, fz + 0.06, 0, 0, 0, 0.24, 0.16, 0.09)));
+    eyes = merged(eyeParts, toyMat, { cast: false, name: 'house-eyes' });
+    eyes.position.set(0, ey, fz);
   }
   // Sokkel met twee voorpootjes naast de deur.
   toyParts.push(prep(new RoundedBoxGeometry(BODY_W * 2 + 1.1, 0.5, FRONT + 0.5 - ZBACK + 0.2, 4, 0.2), COL.base, mat(0, 0.05, (FRONT + 0.5 + ZBACK - 0.2) / 2)));
   for (const sgn of [-1, 1]) {
     const px = sgn * 1.78;
-    toyParts.push(prep(new THREE.SphereGeometry(1, 16, 10), COL.paw, mat(px, 0.36, 1.5, 0, 0, 0, 0.56, 0.3, 0.52)));
-    for (const dx of [-0.3, 0, 0.3]) toyParts.push(prep(new THREE.SphereGeometry(1, 10, 6), COL.paw, mat(px + dx, 0.4, 1.92, 0, 0, 0, 0.16, 0.13, 0.13)));
+    toyParts.push(prep(new THREE.SphereGeometry(1, 14, 8), COL.paw, mat(px, 0.36, 1.5, 0, 0, 0, 0.56, 0.3, 0.52)));
+    for (const dx of [-0.3, 0, 0.3]) toyParts.push(prep(new THREE.SphereGeometry(1, 8, 5), COL.paw, mat(px + dx, 0.4, 1.92, 0, 0, 0, 0.16, 0.13, 0.13)));
   }
   // Staart: krult achter het huis omhoog en piept aan de linkerkant naar buiten.
   {
     const curve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(-2.4, 0.9, -1.2), new THREE.Vector3(-3.3, 0.9, -2.0), new THREE.Vector3(-4.3, 2.2, -2.1),
       new THREE.Vector3(-4.55, 4.0, -1.8), new THREE.Vector3(-4.0, 5.5, -1.7), new THREE.Vector3(-3.2, 5.7, -1.8)]);
-    toyParts.push(prep(new THREE.TubeGeometry(curve, 40, 0.3, 10, false), COL.body));
-    toyParts.push(prep(new THREE.SphereGeometry(0.36, 16, 12), PAL.pink, mat(-3.2, 5.7, -1.8)));
+    toyParts.push(prep(new THREE.TubeGeometry(curve, 26, 0.3, 8, false), COL.body));
+    toyParts.push(prep(new THREE.SphereGeometry(0.36, 12, 8), PAL.pink, mat(-3.2, 5.7, -1.8)));
   }
   // Glijbaan: start op een platformpje achter op de zijkant bij de bovenste verdieping, loopt langs
   // de zijwand naar voren (langs alle drie verdiepingen) en komt voor het huis op het gras uit.
@@ -349,7 +362,7 @@ export function buildShell(scene) {
       along(top + 0.05, SZ0), along(4.2, -0.2), along(3.1, 0.75),
       new THREE.Vector3(4.72, 2.0, 1.75), new THREE.Vector3(4.76, 1.0, 2.6),
       new THREE.Vector3(4.8, 0.35, 3.25), new THREE.Vector3(4.82, 0.15, 3.75)]);
-    toyParts.push(prep(slideGeometry(curve, 80, 0.3, 0.07), COL.slide));
+    toyParts.push(prep(slideGeometry(curve, 48, 0.3, 0.07), COL.slide));
     // pootjes onder het vrije stuk
     for (const [z, y] of [[1.75, 2.0], [2.6, 1.0]]) {
       const h = y - 0.3 - GROUND;
@@ -399,7 +412,7 @@ export function buildShell(scene) {
     for (const sgn of [-1, 1]) toyParts.push(prep(new THREE.BoxGeometry(0.06, 0.13, D), COL.trim, mat(x + sgn * (CW / 2 - 0.03), y + 0.065, zc)));
     // bordje met het kamericoon op de gevel, boven de kamer
     const by = y + CH - LINTEL + 0.1, bz = FRONT + 0.09;
-    toyParts.push(prep(new THREE.CylinderGeometry(0.41, 0.41, 0.1, 24), '#ffffff', mat(x, by, bz, Math.PI / 2, 0, 0)));
+    toyParts.push(prep(new THREE.CylinderGeometry(0.41, 0.41, 0.1, 20), '#ffffff', mat(x, by, bz, Math.PI / 2, 0, 0)));
     const bu = (k % 4) * 0.25, bv = 1 - Math.floor(k / 4) * 0.5;
     badgeParts.push(prep(remapUV(new THREE.CircleGeometry(0.35, 24), (u, v) => [bu + u * 0.25, bv - 0.5 + v * 0.5]), '#ffffff', mat(x, by, bz + 0.056), true));
     // onzichtbaar tikvlak: een dunne plaat in de kameropening (van de kamerrand tot de voorkant
@@ -413,6 +426,7 @@ export function buildShell(scene) {
   });
 
   group.add(merged(toyParts, toyMat, { name: 'shell-toy' }));
+  group.add(eyes);
   group.add(merged(innerParts, softMat, { cast: false, name: 'shell-inner' }));
   group.add(merged(wallParts, new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.92 }), { cast: false, name: 'shell-wallpaper' }));
   group.add(merged(floorParts, new THREE.MeshStandardMaterial({ map: floorTex, vertexColors: true, roughness: 0.7 }), { cast: false, name: 'shell-floor' }));
@@ -426,11 +440,11 @@ export function buildShell(scene) {
   door.position.set(0, Y0, ZF + 0.12);
   door.userData.isDoor = true; door.userData.baseY = Y0;
   {
-    const leaf = new THREE.ExtrudeGeometry(doorPath(new THREE.Shape(), DOOR_W - 0.04, DOOR_SPRING, 0.02), { depth: 0.06, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 3, curveSegments: 16 });
+    const leaf = new THREE.ExtrudeGeometry(doorPath(new THREE.Shape(), DOOR_W - 0.04, DOOR_SPRING, 0.02), { depth: 0.06, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 2, curveSegments: 10 });
     doorParts.push(prep(leaf, COL.door));
-    doorParts.push(prep(new THREE.TorusGeometry(0.22, 0.05, 10, 24), '#ffffff', mat(0, 1.12, 0.12)));
+    doorParts.push(prep(new THREE.TorusGeometry(0.22, 0.05, 8, 18), '#ffffff', mat(0, 1.12, 0.12)));
     doorParts.push(prep(new THREE.CircleGeometry(0.22, 24), COL.glass, mat(0, 1.12, 0.11)));
-    doorParts.push(prep(new THREE.SphereGeometry(0.07, 14, 10), COL.knob, mat(0.38, 0.72, 0.14)));
+    doorParts.push(prep(new THREE.SphereGeometry(0.07, 10, 6), COL.knob, mat(0.38, 0.72, 0.14)));
     for (const dy of [0.32, 0.55]) doorParts.push(prep(new RoundedBoxGeometry(0.8, 0.05, 0.03, 2, 0.012), COL.doorD, mat(0, dy, 0.11)));
   }
   door.add(merged(doorParts, toyMat));
@@ -451,16 +465,16 @@ export function buildShell(scene) {
     clock: v(0, HEAD_Y + 1.9, FRONT + 0.02),
     birdhouse: v(0, HEAD_Y + HEAD_RY + 0.15, 0.1),
     flowerpot: v(-0.95, 0.3, 1.42),
-    mauwtje: v(2.0, GROUND, 2.45),
+    mauwtje: v(2.55, GROUND, 2.45),
     // De tuinverrassingen staan dicht genoeg bij het huis om bij de startcamera op telefoon
     // (staand) en desktop (liggend) in beeld te staan, naast het pad en niet voor de deur.
     mailbox: v(1.15, GROUND, 3.0),
-    doghouse: v(-4.1, GROUND, 2.2),
-    wateringcan: v(3.7, GROUND, 2.1),
-    ball: v(-2.0, GROUND, 3.1),
+    doghouse: v(-3.55, GROUND, 2.15),
+    wateringcan: v(3.95, 0.3, 1.4),
+    ball: v(-1.95, GROUND, 3.3),
     slide: v(4.82, GROUND, 4.0),
   };
 
   scene.add(group);
-  return { group, slots, door, doorHit, anchors };
+  return { group, slots, door, doorHit, anchors, eyes };
 }

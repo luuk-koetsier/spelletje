@@ -80,7 +80,7 @@ export function furnish(slot, kit) {
   // xylofoon rechts vooraan, met twee stokjes
   const XX = W - 0.32, XZ = 0.62, xr = -0.35;
   const X = (m) => new THREE.Matrix4().multiplyMatrices(mat(XX, 0, XZ, 0, xr), m);
-  for (const z of [-0.07, 0.07]) b.toy(new RoundedBoxGeometry(0.44, 0.04, 0.03, 1, 0.012), PAL.wood, X(mat(0, 0.02, z * (1 + 0))));
+  for (const z of [-0.07, 0.07]) b.toy(new RoundedBoxGeometry(0.44, 0.04, 0.03, 1, 0.012), PAL.wood, X(mat(0, 0.02, z)));
   [PAL.coral, PAL.orange, PAL.yellow, PAL.green, PAL.blue, PAL.purple].forEach((col, i) => {
     const L = 0.2 - i * 0.018;
     b.toy(new RoundedBoxGeometry(0.05, 0.018, L, 1, 0.007), col, X(mat(-0.16 + i * 0.064, 0.05, 0)));

@@ -62,7 +62,10 @@ export function attachInput(canvas, camera, controls, targets, handlers, opts = 
     if (obj !== hovered) { hovered = obj; if (opts.onHover) opts.onHover(obj); }
     if (!p) { tip.style.opacity = '0'; canvas.style.cursor = 'grab'; return; }
     canvas.style.cursor = 'pointer';
-    if (p.kind === 'room') showTip(p.target.name, e);
+    // De tip toont de kamernaam, ook boven de bewoner-kat van die kamer.
+    const catRoom = p.kind === 'cat' && p.object.userData.catRoom;
+    const room = p.kind === 'room' ? p.target : catRoom ? (targets.rooms.find(h => h.userData.room.id === catRoom) || {}).userData?.room : null;
+    if (room) showTip(room.name, e);
     else if (p.kind === 'door') showTip('Welkom!', e);
     else tip.style.opacity = '0';
   });
@@ -80,4 +83,5 @@ export function attachInput(canvas, camera, controls, targets, handlers, opts = 
     tip.style.opacity = '0';
     if (hovered) { hovered = null; if (opts.onHover) opts.onHover(null); }
   });
+  return { pick };
 }

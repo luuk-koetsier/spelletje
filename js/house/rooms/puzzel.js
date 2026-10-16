@@ -34,7 +34,7 @@ export function furnish(slot, kit) {
   // gestreept kleed met een half gelegde puzzel (4 bij 3, zeven stukjes liggen al)
   b.model('fur-rug-rectangle-stripes-a', { x: 0.3, z: 0.24, s: 0.42, cast: false });
   const U = 0.15, PX = 0.32, PZ = 0.26, PY = 0.045;
-  const piece = new THREE.ExtrudeGeometry(pieceShape(U), { depth: 0.022, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.006, bevelSegments: 1, curveSegments: 3 });
+  const piece = new THREE.ExtrudeGeometry(pieceShape(U), { depth: 0.028, bevelEnabled: false, curveSegments: 3 });
   piece.rotateX(-Math.PI / 2);
   // het plaatje: blauwe lucht met een zonnetje boven, groene heuvels onder
   const pic = [

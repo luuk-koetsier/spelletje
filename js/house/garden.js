@@ -93,13 +93,13 @@ function skyBackground(scene) {
 function treeParts(x, z, s) {
   const out = [part(new THREE.CylinderGeometry(0.16, 0.22, 1.2, 10), C.trunk, M(x, GROUND + 0.6 * s, z, 0, 0, 0, s))];
   for (const [dx, dy, dz, r, col] of [[0, 1.75, 0, 0.95, C.leaf], [0.58, 1.42, 0.22, 0.62, C.leafD], [-0.56, 1.5, -0.12, 0.58, C.leafD], [0.08, 2.3, 0.05, 0.56, C.leafL]])
-    out.push(part(new THREE.SphereGeometry(r, 14, 10), col, M(x + dx * s, GROUND + dy * s, z + dz * s, 0, 0, 0, s)));
+    out.push(part(new THREE.SphereGeometry(r, 12, 8), col, M(x + dx * s, GROUND + dy * s, z + dz * s, 0, 0, 0, s)));
   return out;
 }
 function bushParts(x, z, s) {
   const out = [];
   for (const [dx, dz, r, col] of [[0, 0, 0.46, C.bush], [0.4, 0.1, 0.34, C.bushL], [-0.38, 0.12, 0.32, C.bushL]])
-    out.push(part(new THREE.SphereGeometry(r, 12, 8), col, M(x + dx * s, GROUND + r * 0.55 * s, z + dz * s, 0, 0, 0, s, s * 0.85, s)));
+    out.push(part(new THREE.SphereGeometry(r, 10, 7), col, M(x + dx * s, GROUND + r * 0.55 * s, z + dz * s, 0, 0, 0, s, s * 0.85, s)));
   return out;
 }
 
@@ -143,7 +143,7 @@ export function buildGarden(scene, anchors) {
     for (const p of pts) {
       const h = p.gate ? H + 0.1 : H;
       parts.push(part(new RoundedBoxGeometry(0.11, h, 0.08, 1, 0.03), C.white, M(p.x, GROUND + h / 2, p.z, 0, p.rad, 0)));
-      parts.push(part(new THREE.SphereGeometry(p.gate ? 0.075 : 0.055, 8, 6), PAL.pink, M(p.x, GROUND + h + 0.02, p.z)));
+      parts.push(part(new THREE.SphereGeometry(p.gate ? 0.075 : 0.055, 6, 4), PAL.pink, M(p.x, GROUND + h + 0.02, p.z)));
     }
     for (let i = 0; i < pts.length - 1; i++) {
       const p = pts[i], q = pts[i + 1];
@@ -189,11 +189,11 @@ export function buildGarden(scene, anchors) {
     const stem = mergeGeometries([
       part(new THREE.CylinderGeometry(0.016, 0.02, 0.26, 5), C.leafD, M(0, 0.13, 0)),
       part(new THREE.SphereGeometry(0.06, 6, 4), C.leaf, M(0.05, 0.07, 0, 0, 0, -0.7, 1, 0.45, 0.6)),
-      part(new THREE.SphereGeometry(0.045, 8, 6), PAL.yellow, M(0, 0.29, 0, 0, 0, 0, 1, 0.7, 1)),
+      part(new THREE.SphereGeometry(0.045, 6, 4), PAL.yellow, M(0, 0.29, 0, 0, 0, 0, 1, 0.7, 1)),
     ], false);
     const petalParts = [];
     for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2;
-      petalParts.push(part(new THREE.SphereGeometry(0.055, 6, 4), C.white, M(Math.cos(a) * 0.07, 0.285, Math.sin(a) * 0.07, 0, -a, 0, 1, 0.5, 0.8))); }
+      petalParts.push(part(new THREE.SphereGeometry(0.055, 6, 3), C.white, M(Math.cos(a) * 0.07, 0.285, Math.sin(a) * 0.07, 0, -a, 0, 1, 0.5, 0.8))); }
     const petals = mergeGeometries(petalParts, false);
     const cols = [PAL.coral, PAL.pink, PAL.purple, PAL.butter, '#FFFFFF', PAL.peach];
     const spots = [];
@@ -210,7 +210,7 @@ export function buildGarden(scene, anchors) {
       stems.setMatrixAt(i, d.matrix); heads.setMatrixAt(i, d.matrix); heads.setColorAt(i, col.set(cols[i % cols.length]));
     });
     stems.name = 'garden-flower-stems'; heads.name = 'garden-flower-heads';
-    heads.castShadow = true;
+    heads.castShadow = false;   // klein en laag: een schaduwvlek is niet te zien, en scheelt driehoeken in de schaduwpas
     group.add(stems, heads);
   }
 
@@ -236,7 +236,7 @@ export function buildGarden(scene, anchors) {
     doghouse.add(body);
     // hond: kop met hangoren, snuitje, neus en oogjes
     const q = [];
-    q.push(part(new THREE.SphereGeometry(0.19, 14, 10), C.fur, M(0, 0, 0)));
+    q.push(part(new THREE.SphereGeometry(0.19, 12, 8), C.fur, M(0, 0, 0)));
     q.push(part(new THREE.SphereGeometry(0.1, 12, 8), C.snout, M(0, -0.06, 0.14, 0, 0, 0, 1.2, 0.8, 1)));
     q.push(part(new THREE.SphereGeometry(0.038, 8, 6), C.ink, M(0, -0.02, 0.235)));
     for (const sgn of [-1, 1]) {
@@ -350,7 +350,7 @@ export function buildGarden(scene, anchors) {
   {
     const cp = [];
     for (const [dx, dy, r] of [[0, 0, 1.0], [1.05, -0.22, 0.75], [-1.05, -0.2, 0.72], [0.5, 0.42, 0.68], [-0.45, 0.35, 0.6]])
-      cp.push(part(new THREE.SphereGeometry(r, 12, 8), dy > 0.3 ? '#FFFFFF' : '#F6F1FB', M(dx, dy, 0, 0, 0, 0, 1, 0.78, 0.8)));
+      cp.push(part(new THREE.SphereGeometry(r, 10, 6), dy > 0.3 ? '#FFFFFF' : '#F6F1FB', M(dx, dy, 0, 0, 0, 0, 1, 0.78, 0.8)));
     const cloudsSpec = [[-8.5, 11.4, -13, 1.0], [7.0, 12.2, -15, 1.1], [-1.5, 14.2, -19, 1.05], [14, 9.8, -12, 0.95]];
     cloudMesh = new THREE.InstancedMesh(mergeGeometries(cp, false), cloudMat, cloudsSpec.length);
     cloudMesh.name = 'garden-clouds'; cloudMesh.frustumCulled = false;

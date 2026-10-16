@@ -63,12 +63,19 @@ function localBox(object) {
   return box;
 }
 // Onzichtbaar tikvlak: 1,65 keer de objectgrootte (net boven de eis van 1,6) en minstens `min` per as, als kind van het object,
-// zodat het meebeweegt.
-function hitBox(object, min) {
+// zodat het meebeweegt. min is een getal of [x, y, z]; shift schuift het tikvlak op (in de ruimte van het object), zodat een
+// groot tikvlak naast een klein object de deur of een kamer niet hoeft te bedekken. Met floor begint het tikvlak op de
+// onderkant van het object en groeit het alleen omhoog: dan bedekt het niet de grond ervoor, waar een tuinkat kan zitten.
+// Maat: TAP is ongeveer 44 px op een telefoon van 360 px breed (staand, startcamera).
+const TAP = 1.35;
+function hitBox(object, min, shift, floor) {
   const box = localBox(object), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
-  const hs = new THREE.Vector3(Math.max(size.x * 1.65, min), Math.max(size.y * 1.65, min), Math.max(size.z * 1.65, min));
+  const mn = Array.isArray(min) ? min : [min, min, min];
+  const hs = new THREE.Vector3(Math.max(size.x * 1.65, mn[0]), Math.max(size.y * 1.65, mn[1]), Math.max(size.z * 1.65, mn[2]));
   const hit = new THREE.Mesh(new THREE.BoxGeometry(hs.x, hs.y, hs.z), hitMat);
   hit.position.copy(c); hit.visible = false;
+  if (floor) hit.position.y = box.min.y - 0.04 + hs.y / 2;
+  if (shift) hit.position.add(new THREE.Vector3(...shift));
   hit.userData.ratio = Math.min(hs.x / Math.max(size.x, 1e-6), hs.y / Math.max(size.y, 1e-6), hs.z / Math.max(size.z, 1e-6));
   object.add(hit);
   return hit;
@@ -85,8 +92,8 @@ function sfx(id) { const kh = window.KH; if (kh && kh.sfx && SOUND[id]) kh.sfx(S
 
 const list = [];
 // Registreer een verrassing. step(k) zet de beweging op voortgang k (0..1); step(1) is weer de ruststand.
-function register(id, object, { dur, step, min = 0.5, start }) {
-  const hit = hitBox(object, min);
+function register(id, object, { dur, step, min = [TAP, TAP, 0.6], shift, floor = false, start }) {
+  const hit = hitBox(object, min, shift, floor);
   hit.userData.surprise = id;
   const s = {
     id, object, hit, dur, left: 0, ratio: hit.userData.ratio,
@@ -123,9 +130,9 @@ function buildClock(at) {
   g.name = 'surprise-clock';
   const wood = PAL.wood, roof = PAL.coral;
   const p = [
-    part(new RoundedBoxGeometry(0.72, 0.62, 0.16, 3, 0.06), wood, M(0, 0, 0.08)),
-    part(new THREE.CylinderGeometry(0.22, 0.22, 0.03, 24), '#FFF7EC', M(0, -0.05, 0.17, Math.PI / 2, 0, 0)),
-    part(new THREE.TorusGeometry(0.22, 0.03, 8, 24), '#FFFFFF', M(0, -0.05, 0.18)),
+    part(new RoundedBoxGeometry(0.72, 0.62, 0.16, 2, 0.06), wood, M(0, 0, 0.08)),
+    part(new THREE.CylinderGeometry(0.22, 0.22, 0.03, 18), '#FFF7EC', M(0, -0.05, 0.17, Math.PI / 2, 0, 0)),
+    part(new THREE.TorusGeometry(0.22, 0.03, 6, 18), '#FFFFFF', M(0, -0.05, 0.18)),
     part(new THREE.CircleGeometry(0.075, 16), '#5A4660', M(0, 0.22, 0.165)),   // deurtje van de koekoek
     part(new THREE.SphereGeometry(0.035, 8, 6), PAL.pinkD, M(0, -0.05, 0.2)),
   ];
@@ -136,7 +143,7 @@ function buildClock(at) {
   // twee dennenappel-gewichtjes aan een touwtje
   for (const sgn of [-1, 1]) {
     p.push(part(new THREE.CylinderGeometry(0.008, 0.008, 0.22, 4), '#FFFFFF', M(sgn * 0.13, -0.42, 0.1)));
-    p.push(part(new THREE.CapsuleGeometry(0.035, 0.07, 3, 8), PAL.woodD, M(sgn * 0.13, -0.56, 0.1)));
+    p.push(part(new THREE.CapsuleGeometry(0.035, 0.07, 2, 6), PAL.woodD, M(sgn * 0.13, -0.56, 0.1)));
   }
   g.add(mesh(p, 'clock-body'));
   const hand = (len, w, col) => {
@@ -165,7 +172,7 @@ function buildBirdhouse(at) {
   g.name = 'surprise-birdhouse';
   const p = [
     part(new THREE.CylinderGeometry(0.05, 0.06, 0.3, 8), '#FFFFFF', M(0, 0.15, 0)),
-    part(new RoundedBoxGeometry(0.62, 0.56, 0.52, 3, 0.07), PAL.mint, M(0, 0.58, 0)),
+    part(new RoundedBoxGeometry(0.62, 0.56, 0.52, 2, 0.07), PAL.mint, M(0, 0.58, 0)),
     part(new THREE.CircleGeometry(0.12, 18), '#5A4660', M(0, 0.62, 0.262)),
     part(new THREE.TorusGeometry(0.12, 0.025, 6, 18), '#FFFFFF', M(0, 0.62, 0.265)),
     part(new THREE.CylinderGeometry(0.02, 0.02, 0.14, 6), PAL.woodD, M(0, 0.44, 0.31, Math.PI / 2, 0, 0)),
@@ -194,7 +201,7 @@ export function addSurprises(scene, anchors) {
 
   // Mauwtje: springt op, miauwt (reactCat) en zegt iets liefs.
   const mauwtje = scene.getObjectByName('cat-mauwtje');
-  if (mauwtje) register('mauwtje', mauwtje, { dur: 0.5, min: 0.6, step() {}, start() { reactCat(mauwtje); } });
+  if (mauwtje) register('mauwtje', mauwtje, { dur: 0.5, min: [TAP / 0.95, TAP / 0.95, 0.6], floor: true, step() {}, start() { reactCat(mauwtje); } });
 
   // Deurbel: knopje gaat in, ding-dong, en de voordeur gaat even open (scharnier links).
   {
@@ -202,7 +209,7 @@ export function addSurprises(scene, anchors) {
     scene.add(bell.group);
     const door = scene.getObjectByName('house-door');
     const W = 0.62, base = door ? door.position.clone() : null;
-    register('deurbel', bell.group, { dur: 1.8, min: 0.45, step(k) {
+    register('deurbel', bell.group, { dur: 1.8, min: [TAP, TAP, 0.4], shift: [0, 0.15, 0], step(k) {
       bell.button.scale.z = 1 - 0.5 * bump(k / 0.15);
       bell.group.rotation.z = Math.sin(k * Math.PI * 6) * 0.08 * (1 - k);
       if (!door) return;
@@ -217,7 +224,7 @@ export function addSurprises(scene, anchors) {
   {
     const c = buildClock(anchors.clock);
     scene.add(c.group);
-    register('klok', c.group, { dur: 2.0, min: 0.5, step(k) {
+    register('klok', c.group, { dur: 2.0, shift: [0, -0.3, 0], step(k) {
       const e = smooth(k);
       c.minute.rotation.z = c.m0 - e * Math.PI * 4;
       c.hour.rotation.z = c.h0 - e * Math.PI / 3;
@@ -237,7 +244,7 @@ export function addSurprises(scene, anchors) {
       part(new RoundedBoxGeometry(0.26, 0.17, 0.025, 1, 0.01), '#FFFFFF', M()),
       part(new THREE.SphereGeometry(0.035, 8, 6), PAL.pinkD, M(0, 0, 0.015, 0, 0, 0, 1, 1, 0.4)),
     ], 'mailbox-letter', { cast: false, visible: false });
-    register('brievenbus', mailbox, { dur: 1.6, min: 0.5, step(k) {
+    register('brievenbus', mailbox, { dur: 1.6, floor: true, step(k) {
       lid.rotation.x = 1.3 * env(k, 0.15, 0.8);
       const q = clamp01((k - 0.12) / 0.75);
       letter.visible = q > 0 && q < 1;
@@ -251,7 +258,7 @@ export function addSurprises(scene, anchors) {
   // Bloempot: de bloem gaat open (groeit en draait een rondje) en wordt weer gewoon.
   {
     const pot = part_('flowerpot'), bloom = part_('flowerpot-bloom');
-    register('bloempot', pot, { dur: 1.4, min: 0.45, step(k) {
+    register('bloempot', pot, { dur: 1.4, floor: true, step(k) {
       bloom.scale.setScalar(1 + 0.7 * bump(k));
       bloom.rotation.y = smooth(k) * Math.PI * 2;
     } });
@@ -261,7 +268,7 @@ export function addSurprises(scene, anchors) {
   {
     const b = buildBirdhouse(anchors.birdhouse);
     scene.add(b.group);
-    register('vogelhuisje', b.group, { dur: 1.8, min: 0.5, step(k) {
+    register('vogelhuisje', b.group, { dur: 1.8, shift: [0, 0.1, 0], step(k) {
       const out = env(k, 0.2, 0.75);
       b.bird.visible = out > 0.01;
       b.bird.position.z = 0.12 + out * 0.18;
@@ -274,7 +281,7 @@ export function addSurprises(scene, anchors) {
   {
     const doghouse = part_('doghouse'), dog = part_('dog');
     const z0 = dog.userData.baseZ ?? dog.position.z, y0 = dog.position.y;
-    register('hond', doghouse, { dur: 1.4, min: 0.6, step(k) {
+    register('hond', doghouse, { dur: 1.4, floor: true, shift: [0, 0.1, 0], step(k) {
       const out = env(k, 0.2, 0.75);
       dog.position.z = z0 + out * 0.18;
       dog.position.y = y0 + Math.abs(Math.sin(k * Math.PI * 4)) * 0.05 * out;
@@ -297,7 +304,7 @@ export function addSurprises(scene, anchors) {
     });
     const flowers = mesh(fp, 'wateringcan-flowers', { visible: false });
     const DUR = 6;
-    register('gieter', can, { dur: DUR, min: 0.5, step(k) {
+    register('gieter', can, { dur: DUR, floor: true, step(k) {
       const s = k * DUR;   // seconden sinds de tik
       // kantelen om de onderrand aan de kant van de tuit (px), zodat de gieter niet in het gras zakt
       const th = -0.45 * env(s / 2, 0.25, 0.75), px = 0.17;
@@ -316,7 +323,7 @@ export function addSurprises(scene, anchors) {
   {
     const ball = part_('ball'), body = ball.children[0];
     const base = ball.position.clone(), dir = new THREE.Vector3(-0.8, 0, 0.6).normalize(), R = 0.2;
-    register('voetbal', ball, { dur: 1.8, min: 0.45, step(k) {
+    register('voetbal', ball, { dur: 1.8, floor: true, step(k) {
       const d = 0.9 * bump(k);
       ball.position.set(base.x + dir.x * d, base.y + Math.abs(Math.sin(k * Math.PI * 3)) * 0.4 * (1 - k), base.z + dir.z * d);
       body.rotation.set(d / R * dir.z, 0, -d / R * dir.x);

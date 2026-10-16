@@ -1,5 +1,5 @@
 /* ============================================================
-   HET HUIS VAN SEP — 3D  (Three.js)
+   HET HUIS VAN SEP: 3D (Three.js)
    Ontwerp exact overgenomen uit de design-handoff.
    Kamers openen een modal; "Spelen!" start het bijbehorende 2D-spel
    via window.KH.launchGame(id).
@@ -9,7 +9,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { PAL, toy, soft, blobShadow, shade } from './style.js';
-import { buildShell } from './shell.js';
+import { buildShell, blinkAt } from './shell.js';
 import { makeCat, reactCat, updateCats } from './cats.js';
 import { furnishRooms } from './rooms/index.js';
 import { buildGarden } from './garden.js';
@@ -70,9 +70,11 @@ key.position.set(9,13,7.5);
 key.shadow.mapSize.set(1024,1024);key.shadow.bias=-0.0005;key.shadow.normalBias=0.03;key.shadow.radius=3;
 const scq=key.shadow.camera;scq.near=1;scq.far=40;scq.left=-11;scq.right=11;scq.top=13;scq.bottom=-6;
 scene.add(key);scene.add(key.target);key.target.position.set(0,3,0);
-// Houdt het apparaat het niet bij, dan eenmalig omlaag naar low (nooit terug).
-const gov=createGovernor(renderer,t=>{key.castShadow=t==='high';},TIER0);
+// Houdt het apparaat het niet bij, dan eenmalig omlaag naar low (nooit terug). In low gaan ook de
+// twee PointLights in de kamers uit (de gloeiende lampjes blijven gloeien via hun emissieve materiaal).
+const gov=createGovernor(renderer,t=>{key.castShadow=t==='high';roomLights(t==='high');},TIER0);
 key.castShadow=gov.tier==='high';
+function roomLights(on){scene.traverse(o=>{if(o.isPointLight)o.visible=on;});}
 
 
 // ─────────── de huisvorm: een kattenhuis met acht kamers (shell.js)
@@ -105,8 +107,8 @@ function residentCat(spec){
   catGroups.push(c);return c;
 }
 placeCat({id:'mauwtje',fur:'#FFB35C',belly:'#FFD9A8',pose:'sit',accessory:'none'},anchors.mauwtje,0.95,0.15);
-placeCat({id:'tuin1',fur:'#E3DCD6',belly:'#FFFFFF',pose:'play',accessory:'none'},new THREE.Vector3(-2.75,-0.2,2.45),0.8,0.5);
-placeCat({id:'tuin2',fur:'#6E6672',belly:'#EDE8EE',pose:'stand',accessory:'none'},new THREE.Vector3(3.15,-0.2,2.85),0.8,-0.5);
+placeCat({id:'tuin1',fur:'#E3DCD6',belly:'#FFFFFF',pose:'play',accessory:'none'},new THREE.Vector3(-0.95,-0.2,4.05),0.8,0.5);
+placeCat({id:'tuin2',fur:'#6E6672',belly:'#EDE8EE',pose:'stand',accessory:'none'},new THREE.Vector3(3.75,-0.2,2.5),0.8,-0.5);
 // Groot zacht vlekje onder het huis.
 {const b=blobShadow(6.2,0.28);b.scale.set(6.2,1,2.6);b.position.set(0,-0.18,0.3);scene.add(b);}
 
@@ -118,7 +120,7 @@ const surprises=addSurprises(scene,anchors);
 
 
 let hovered=null,started=false,paused=false;
-attachInput(canvas,camera,controls,{rooms:roomHits,door:doorHit,surprises,cats:catGroups},{
+const input=attachInput(canvas,camera,controls,{rooms:roomHits,door:doorHit,surprises,cats:catGroups},{
   openRoom,
   door(){dbgEvents.push('door');bounceDoor();meow();},
   surprise:tapSurprise,
@@ -155,7 +157,7 @@ document.getElementById('cardPlay').onclick=()=>{
 modal.addEventListener('pointerdown',e=>{if(e.target===modal)modal.classList.remove('open');});
 
 function roomBlurb(n){return ({
-  Memory:'Vind de dezelfde kaartjes! Klaar om te spelen?',
+  Memory:'Vind twee dezelfde kaartjes! Klaar om te spelen?',
   Puzzel:'Leg de stukjes op de goede plek!',
   Vormen:'Ken jij alle vormen? Kom binnen!',
   Tellen:'1, 2, 3… tel je mee?',
@@ -215,13 +217,31 @@ function animate(){
   if(doorBounce>0){doorBounce=Math.max(0,doorBounce-dt/0.5);const s=Math.sin(doorBounce*Math.PI);door.position.y=door.userData.baseY+s*0.12;door.rotation.z=Math.sin(doorBounce*Math.PI*3)*0.04*s;}
 
   updateCats(dt,t);
+  shell.eyes.scale.y=blinkAt(t);
   garden.update(t);
   updateSurprises(dt);
   renderer.render(scene,camera);
 }
 
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);
-  refitCamera();});
+  onResize();});
+// Bij draaien of een echte formaatwissel (breedte meer dan 10% anders, of de verhouding meer dan 25%)
+// wordt de camera opnieuw passend gemaakt. Een adresbalk die op een telefoon verschijnt of verdwijnt
+// verandert alleen de hoogte een beetje: dan blijven de draaiing en de zoom van het kind staan. Alleen
+// als het huis dan uit beeld zou vallen (de camera stond op de startafstand of verder), schuift de
+// camera langs dezelfde kijkrichting net zo ver terug als nodig is.
+let fitW=innerWidth,fitAspect=innerWidth/innerHeight;
+function onResize(){
+  const a=innerWidth/innerHeight;
+  if(introT<1||Math.abs(innerWidth/fitW-1)>0.1||Math.abs(a/fitAspect-1)>0.25){fitW=innerWidth;fitAspect=a;refitCamera();return;}
+  const before=camEnd.distanceTo(TARGET),dist=camera.position.distanceTo(controls.target);
+  fitCamera();
+  const need=camEnd.distanceTo(TARGET);
+  controls.maxDistance=Math.max(controls.maxDistance,dist);
+  if(dist>=before*0.98&&dist<need){
+    camera.position.sub(controls.target).setLength(need).add(controls.target);controls.update();
+  }
+}
 // Na draaien of formaatwissel: zelfde kijkhoek houden, maar de afstand opnieuw passend maken,
 // zodat het huis na liggend naar staand weer helemaal in beeld staat (ook buiten de testmodus).
 function refitCamera(){
@@ -239,7 +259,7 @@ renderer.setSize(innerWidth,innerHeight);
 window.__hub3d={
   pause(){paused=true;},
   resume(){paused=false;clock.getDelta();resetCam=1;started=true;controls.autoRotate=false;
-    camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);fitCamera();},
+    camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);fitCamera();fitW=innerWidth;fitAspect=camera.aspect;},
 };
 
 await document.fonts.ready.catch(()=>{});
@@ -268,6 +288,18 @@ if(DEBUG){
   window.__house={
     ready:false,events:dbgEvents,
     info(){const i=renderer.info.render;return {calls:i.calls,triangles:i.triangles,tier:gov.tier,azimuth:Math.round(THREE.MathUtils.radToDeg(controls.getAzimuthalAngle()))};},
+    // De zwaarste zichtbare meshes (driehoeken per mesh, met naam van de mesh en zijn ouder), om het budget te bewaken.
+    heavy(n=20){const out=[];scene.traverseVisible(o=>{if(!o.isMesh||o.material===undefined||o.material.opacity===0)return;
+        const g=o.geometry,t=(g.index?g.index.count:g.attributes.position.count)/3*(o.isInstancedMesh?o.count:1);
+        out.push({name:o.name||'?',parent:(o.parent&&o.parent.name)||'?',tris:Math.round(t),cast:o.castShadow});});
+      out.sort((a,b)=>b.tris-a.tris);return out.slice(0,n);},
+    // Eén beeld meten, met en zonder de schaduwpas. renderer.info telt normaal alleen de hoofdpas
+    // (three.js zet de teller na de schaduwpas op nul); met autoReset uit telt de schaduwpas mee.
+    budget(){const inf=renderer.info,i=inf.render;camera.updateMatrixWorld();renderer.render(scene,camera);
+      const main={calls:i.calls,triangles:i.triangles};
+      inf.autoReset=false;inf.reset();renderer.render(scene,camera);const all={calls:i.calls,triangles:i.triangles};inf.autoReset=true;
+      return {tier:gov.tier,shadow:renderer.shadowMap.enabled&&key.castShadow,calls:main.calls,triangles:main.triangles,
+        shadowCalls:all.calls-main.calls,shadowTriangles:all.triangles-main.triangles,totalCalls:all.calls,totalTriangles:all.triangles};},
     // Per kamer: het midden van de kamer als schermpunt (daar tikt een kind) en de maat van het tikvlak.
     rooms(){return roomHits.map(h=>{const id=h.userData.room.id;
       return {id,...fronts(0.5).find(f=>f.id===id),...rect(h)};});},
@@ -305,6 +337,12 @@ if(DEBUG){
     // Wereldpunt naar schermpunt.
     project(x,y,z){camera.updateMatrixWorld();const q=new THREE.Vector3(x,y,z).project(camera);return {x:Math.round((q.x+1)/2*innerWidth),y:Math.round((1-q.y)/2*innerHeight)};},
     tap(x,y){fire('pointerdown',x,y,1);fire('pointerup',x,y,0);},
+    // Wat een tik op dit schermpunt zou raken, zonder iets te activeren: 'surprise:<id>', 'cat:<id>', 'door', 'room:<id>' of null.
+    pickAt(x,y){camera.updateMatrixWorld();scene.updateMatrixWorld(true);const p=input.pick(x,y);if(!p)return null;
+      return p.kind==='surprise'?'surprise:'+p.target.id:p.kind==='cat'?'cat:'+p.target.userData.catId:p.kind==='room'?'room:'+p.target.id:'door';},
+    // Camerastand: azimut en polaire hoek in graden, afstand tot het doelpunt, en de afstand van de startstand.
+    cam(){return {azimuth:+THREE.MathUtils.radToDeg(controls.getAzimuthalAngle()).toFixed(2),polar:+THREE.MathUtils.radToDeg(controls.getPolarAngle()).toFixed(2),
+      distance:+camera.position.distanceTo(controls.target).toFixed(3),home:+camEnd.distanceTo(TARGET).toFixed(3)};},
     drag(x0,y0,x1,y1){fire('pointerdown',x0,y0,1);
       for(let i=1;i<=6;i++)fire('pointermove',x0+(x1-x0)*i/6,y0+(y1-y0)*i/6,1);
       fire('pointerup',x1,y1,0);},
@@ -314,7 +352,7 @@ if(DEBUG){
     home(){this.settle();resetCam=0;controls.target.copy(TARGET);camera.position.copy(camEnd);controls.update();},
     settle(){for(let i=0;i<300;i++)controls.update();},
     // Lampen in de scène: aantal PointLights en aantal lampen dat schaduw werpt.
-    lights(){let point=0,shadow=0;scene.traverse(o=>{if(!o.isLight)return;if(o.isPointLight)point++;if(o.castShadow)shadow++;});return {point,shadow};},
+    lights(){let point=0,pointOn=0,shadow=0;scene.traverse(o=>{if(!o.isLight)return;if(o.isPointLight){point++;let on=o.visible&&o.intensity>0;o.traverseAncestors(a=>{if(!a.visible)on=false;});if(on)pointOn++;}if(o.castShadow)shadow++;});return {point,pointOn,shadow};},
     stageB:'pending',
     assets(){return assetInfo();},
     // Tuin: de flyers (schermpunt), het hondenhok en zijn anker, en wat de tuin kost aan draw calls.
@@ -325,13 +363,18 @@ if(DEBUG){
       garden.group.visible=false;renderer.render(scene,camera);const calls0=i.calls,tris0=i.triangles;garden.group.visible=true;
       renderer.render(scene,camera);
       return {flyers:garden.flyers.map(f=>({kind:f.userData.flyer,inScene:inScene(f),...pt(f)})),
-        doghouse:w(garden.parts.doghouse),doghouseAnchor:{x:anchors.doghouse.x,y:anchors.doghouse.y,z:anchors.doghouse.z},
+        doghouse:w(garden.parts.doghouse),doghouseRect:(()=>{const b=visBox(garden.parts.doghouse);let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+          for(const x of [b.min.x,b.max.x])for(const y of [b.min.y,b.max.y])for(const z of [b.min.z,b.max.z]){const q=new THREE.Vector3(x,y,z).project(camera);
+            const sx=(q.x+1)/2*innerWidth,sy=(1-q.y)/2*innerHeight;x0=Math.min(x0,sx);x1=Math.max(x1,sx);y0=Math.min(y0,sy);y1=Math.max(y1,sy);}
+          return {x0:Math.round(x0),y0:Math.round(y0),x1:Math.round(x1),y1:Math.round(y1)};})(),doghouseAnchor:{x:anchors.doghouse.x,y:anchors.doghouse.y,z:anchors.doghouse.z},
         flowerTop:(()=>{const f=garden.group.getObjectByName('garden-flower-heads');f.computeBoundingBox();return f.boundingBox.max.y;})(),
         calls:calls-calls0,triangles:tris-tris0};},
   };
 }
 // Stap A: huisvorm, licht, lucht en kamertikvlakken staan er al en renderen direct.
 animate();
+// Het huis staat er: de governor gaat meten, na 2 s opwarmen (de eerste shaders zijn dan gecompileerd).
+gov.arm();
 if(DEBUG)window.__house.ready=true;
 // Stap B: de kamermodellen op de achtergrond laden. Wat niet laadt wordt overgeslagen.
 // Daarna richt furnishRooms de kamers in, ook als er modellen ontbreken (die worden overgeslagen).
@@ -340,6 +383,10 @@ let assetInfo=()=>null;
 import('./assets.js').then(a=>{
   assetInfo=()=>({...a.stats,wanted:a.MODELS.length});
   return a.preload(a.MODELS).then(()=>furnishRooms(shell.slots,{cloneModel:a.cloneModel,toy,soft,blobShadow,PAL,makeCat:residentCat}));
-}).catch(e=>console.warn('stap B:',e)).finally(()=>{if(DEBUG)window.__house.stageB='done';});
+}).catch(e=>console.warn('stap B:',e)).finally(()=>{
+  roomLights(gov.tier==='high');
+  // De nieuwe spullen brengen nieuwe shaders mee: opnieuw even opwarmen voordat de governor meet.
+  if(gov.tier==='high')gov.arm();
+  if(DEBUG)window.__house.stageB='done';});
 setTimeout(()=>{if(!started){controls.autoRotate=true;}},2000);
 setTimeout(()=>{const l=document.getElementById('load');if(l){l.style.opacity='0';setTimeout(()=>l.remove(),500);}},700);

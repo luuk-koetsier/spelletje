@@ -32,7 +32,7 @@ function part(geo, region, m) {
   g.userData.region = region;
   return g;
 }
-const ball = (region, x, y, z, sx, sy = sx, sz = sx, rx = 0, ry = 0, rz = 0, seg = 7) =>
+const ball = (region, x, y, z, sx, sy = sx, sz = sx, rx = 0, ry = 0, rz = 0, seg = 5) =>
   part(new THREE.SphereGeometry(1, seg + 4, seg), region, mat(x, y, z, rx, ry, rz, sx, sy, sz));
 // Voeg onderdelen samen tot één basis: gedeelde posities en normalen, plus een deel per vertex.
 function base(parts, xform) {
@@ -56,10 +56,10 @@ function earShape(k) {
 }
 function headParts() {
   const out = [];
-  out.push(ball(FUR, 0, 0, 0, 0.33, 0.29, 0.29, 0, 0, 0, 13));                     // schedel
+  out.push(ball(FUR, 0, 0, 0, 0.33, 0.29, 0.29, 0, 0, 0, 11));                     // schedel
   for (const sg of [-1, 1]) {
     out.push(ball(BELLY, sg * 0.075, -0.1, 0.225, 0.1, 0.075, 0.07, 0, 0, 0, 6));             // snoetwangetjes
-    out.push(ball(EYE, sg * 0.135, 0.025, 0.25, 0.062, 0.078, 0.035, 0, sg * 0.4, 0, 9));
+    out.push(ball(EYE, sg * 0.135, 0.025, 0.25, 0.062, 0.078, 0.035, 0, sg * 0.4, 0, 7));
     out.push(ball(SHINE, sg * 0.135 + 0.024, 0.055, 0.283, 0.021, 0.021, 0.012, 0, sg * 0.4, 0, 4));
     out.push(ball(SHINE, sg * 0.135 - 0.018, 0.0, 0.284, 0.01, 0.01, 0.006, 0, sg * 0.4, 0, 3));
     out.push(ball(BLUSH, sg * 0.215, -0.065, 0.2, 0.048, 0.028, 0.014, 0, sg * 0.75, 0, 4)); // blosjes
@@ -87,7 +87,7 @@ const POSES = {
   sit: {
     head: mat(0, 0.6, 0.02),
     body: () => [
-      ball(FUR, 0, 0.25, 0, 0.25, 0.25, 0.22, 0, 0, 0, 9),
+      ball(FUR, 0, 0.25, 0, 0.25, 0.25, 0.22, 0, 0, 0, 8),
       ball(BELLY, 0, 0.24, 0.13, 0.16, 0.18, 0.1),
       ...[-1, 1].flatMap(sg => [
         ball(FUR, sg * 0.165, 0.1, 0.02, 0.12, 0.105, 0.15),                        // achterpootjes
@@ -101,7 +101,7 @@ const POSES = {
     // zit en zwaait met één pootje, kopje een beetje scheef
     head: mat(-0.02, 0.6, 0.02, 0, 0, 0.16),
     body: () => [
-      ball(FUR, 0, 0.25, 0, 0.25, 0.25, 0.22, 0, 0, 0, 9),
+      ball(FUR, 0, 0.25, 0, 0.25, 0.25, 0.22, 0, 0, 0, 8),
       ball(BELLY, 0, 0.24, 0.13, 0.16, 0.18, 0.1),
       ...[-1, 1].map(sg => ball(FUR, sg * 0.165, 0.1, 0.02, 0.12, 0.105, 0.15)),
       ball(BELLY, -0.095, 0.045, 0.2, 0.075, 0.055, 0.095, 0, 0, 0, 6),
@@ -115,7 +115,7 @@ const POSES = {
     // opgerold broodje: laag lijf, pootjes ingevouwen
     head: mat(0, 0.42, 0.2),
     body: () => [
-      ball(FUR, 0, 0.19, -0.06, 0.3, 0.19, 0.34, 0, 0, 0, 9),
+      ball(FUR, 0, 0.19, -0.06, 0.3, 0.19, 0.34, 0, 0, 0, 8),
       ball(BELLY, 0, 0.17, 0.2, 0.17, 0.11, 0.08),
       ...[-1, 1].map(sg => ball(BELLY, sg * 0.1, 0.04, 0.3, 0.072, 0.045, 0.085)),
     ],
@@ -126,7 +126,7 @@ const POSES = {
     // staat op vier stevige pootjes, lijf opzij, kijkt naar voren
     head: mat(0.27, 0.64, 0.05),
     body: () => [
-      ball(FUR, -0.04, 0.34, 0, 0.32, 0.2, 0.2, 0, 0, 0, 9),
+      ball(FUR, -0.04, 0.34, 0, 0.32, 0.2, 0.2, 0, 0, 0, 8),
       ball(BELLY, -0.04, 0.27, 0.01, 0.24, 0.13, 0.155),
       ...[[0.15, 0.11], [0.15, -0.11], [-0.22, 0.11], [-0.22, -0.11]].flatMap(([x, z]) => [
         part(new THREE.CapsuleGeometry(0.06, 0.16, 3, 8), FUR, mat(x, 0.15, z)),
@@ -148,8 +148,8 @@ function poseBase(pose) {
   const curve = new THREE.CatmullRomCurve3(P.tail.pts.map(a => new THREE.Vector3(...a)));
   const end = curve.getPoint(1);
   const tail = base([
-    part(new THREE.TubeGeometry(curve, 12, 0.045, 7, false), FUR),
-    part(new THREE.SphereGeometry(0.045, 8, 6), FUR, mat(0, 0, 0)),          // rond begin
+    part(new THREE.TubeGeometry(curve, 10, 0.045, 6, false), FUR),
+    part(new THREE.SphereGeometry(0.045, 6, 4), FUR, mat(0, 0, 0)),          // rond begin
     ball(BELLY, end.x, end.y, end.z, 0.056),          // lichte puntje
   ]);
   const b = { body, tail };

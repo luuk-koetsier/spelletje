@@ -3,6 +3,7 @@
    staande lamp. De bewoner is een donkere kat met een duikbril. */
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { roomBuilder, mat, vc, toyVC } from './build.js';
 
 const FISH = ['#FFAD66', '#FFD45C', '#FF8EB4', '#FF8E8E', '#B190EC'];
@@ -10,23 +11,12 @@ const N_BUBBLES = 7;
 
 // Eén visje (wit, de kleur komt per exemplaar), neus naar +x.
 function fishGeo() {
-  const g = mergeParts([
+  const g = mergeGeometries([
     vc(new THREE.SphereGeometry(0.065, 10, 8), '#FFFFFF', mat(0, 0, 0, 0, 0, 0, 1.25, 0.95, 0.7)),
     vc(new THREE.ConeGeometry(0.05, 0.075, 4), '#FFFFFF', mat(-0.095, 0, 0, 0, 0, -Math.PI / 2, 1, 1, 0.35)),
     vc(new THREE.ConeGeometry(0.028, 0.045, 4), '#FFFFFF', mat(-0.005, 0.062, 0, 0, 0, 0.5, 1, 1, 0.3)),
     ...[-1, 1].map(s => vc(new THREE.SphereGeometry(0.015, 6, 4), '#2E2433', mat(0.048, 0.015, s * 0.038))),
-  ]);
-  return g;
-}
-function mergeParts(parts) {
-  const g = new THREE.BufferGeometry();
-  let n = 0;
-  for (const p of parts) n += p.attributes.position.count;
-  for (const k of ['position', 'normal', 'color']) {
-    const arr = new Float32Array(n * 3); let o = 0;
-    for (const p of parts) { arr.set(p.attributes[k].array, o); o += p.attributes[k].array.length; }
-    g.setAttribute(k, new THREE.BufferAttribute(arr, 3));
-  }
+  ], false);
   return g;
 }
 
