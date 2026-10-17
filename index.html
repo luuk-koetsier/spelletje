@@ -2974,6 +2974,9 @@ scenes.verkleden = function (app) {
     ["ding", "⚔️ Erbij"],
     ["vriend", "🐶 Vriendje"],
   ];
+  // Sticker: wie 4 verschillende soorten kleding heeft uitgeprobeerd, krijgt er een (een keer per bezoek).
+  const uitgeprobeerd = new Set();
+  let stickerGehad = false;
   for (const [sleutel, label] of knoppen) {
     const b = document.createElement("button");
     b.className = "dress-btn";
@@ -2985,6 +2988,8 @@ scenes.verkleden = function (app) {
       const labels = DRESS_LABELS[sleutel];
       const waarde = DRESS_OPTIES[sleutel][staat[sleutel]];
       if (labels && labels[waarde] && waarde !== "geen") speak(labels[waarde].replace(/^\S+\s/, ""));
+      uitgeprobeerd.add(sleutel);
+      if (!stickerGehad && uitgeprobeerd.size >= 4) { stickerGehad = true; setTimeout(() => awardSticker(), 1200); }
     });
     panel.appendChild(b);
   }
@@ -3022,11 +3027,18 @@ scenes.speel = function (app) {
   const grid = $("#busy-grid");
   const noten = [262, 330, 392, 523];
 
+  // Sticker: wie 5 verschillende speeltjes heeft geprobeerd, krijgt er een (een keer per bezoek).
+  const geprobeerd = new Set();
+  let stickerGehad = false;
   function cel(inhoud) {
     const c = document.createElement("div");
     c.className = "busy-cell";
     c.appendChild(inhoud);
     grid.appendChild(c);
+    c.addEventListener("pointerdown", () => {
+      geprobeerd.add(c);
+      if (!stickerGehad && geprobeerd.size >= 5) { stickerGehad = true; setTimeout(() => awardSticker(), 900); }
+    });
     return c;
   }
 
