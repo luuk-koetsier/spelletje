@@ -1,8 +1,8 @@
 /* Vormen: een klaslokaaltje. Een schoolbord met vormen in krijt, twee schooltafeltjes met
    stoeltjes, een vormenstoof met losse blokjes en een kastje met een wereldbol. De bewoner is
    een lila juf-kat met een brilletje. */
-import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import * as THREE from '../../../vendor/three/build/three.module.js';
+import { RoundedBoxGeometry } from '../../../vendor/three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { roomBuilder, mat } from './build.js';
 
 function starShape(R, r) {

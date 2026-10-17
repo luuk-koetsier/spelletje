@@ -1,8 +1,8 @@
 /* Kleuren: een atelier. Een schildersezel met een half af schilderij (regenboog en zon), verfpotten
    met druppels, spetters op de vloer, een werktafel met een pot vol kwasten, een krukje met een
    palet en tekeningen die met plakband op de muur hangen. De bewoner is een witte kat met een kwast. */
-import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import * as THREE from '../../../vendor/three/build/three.module.js';
+import { RoundedBoxGeometry } from '../../../vendor/three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { roomBuilder, mat, along } from './build.js';
 
 // Een spetter: een rond plasje met een paar losse druppeltjes eromheen (plat op de vloer).

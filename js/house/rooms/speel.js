@@ -1,9 +1,9 @@
 /* Speelkamer: een mini-circus. Gestreept tentdoek op de achterwand met vlaggetjes erboven, een
    piste met grote circusballen, een xylofoon, een draaimolentje dat langzaam ronddraait en een
    circuston. De bewoner is een bruine kat met een kroontje, bovenop de circuston. */
-import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import * as THREE from '../../../vendor/three/build/three.module.js';
+import { RoundedBoxGeometry } from '../../../vendor/three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from '../../../vendor/three/examples/jsm/utils/BufferGeometryUtils.js';
 import { roomBuilder, mat, vc, toyVC } from './build.js';
 
 // Een circusbal: bol met twee gekleurde banden.

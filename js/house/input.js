@@ -9,7 +9,7 @@
    bewoner-kat gaat voor zijn eigen kamer
    (zijn tikvlak ligt achter de kameropening). Een kat van een andere kamer telt dan niet, zodat een
    schuin gedraaid huis nooit de buurkamer of zijn kat raakt. */
-import * as THREE from 'three';
+import * as THREE from '../../vendor/three/build/three.module.js';
 
 const TAP_MS = 450, TAP_PX = 7;
 

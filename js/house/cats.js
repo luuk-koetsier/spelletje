@@ -4,8 +4,8 @@
    kleurenlijst (vertex-kleuren) bij dezelfde posities en normalen. Alle katten delen
    één materiaal, zodat een kat met staart, accessoire en schaduwvlekje vier draw calls kost.
    Maat: een zittende kat is ongeveer 1 eenheid hoog (oren meegerekend); main.js schaalt. */
-import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import * as THREE from '../../vendor/three/build/three.module.js';
+import { mergeGeometries } from '../../vendor/three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PAL, blobShadow } from './style.js';
 
 // Delen van het model. Elke vertex hoort bij één deel; het deel bepaalt de kleur.

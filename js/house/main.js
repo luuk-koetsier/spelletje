@@ -3,9 +3,9 @@
    Bouwt de scene, camera en renderloop. Kamers openen een modal;
    "Spelen!" start het bijbehorende 2D-spel via window.KH.launchGame(id).
    ============================================================ */
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import * as THREE from '../../vendor/three/build/three.module.js';
+import { OrbitControls } from '../../vendor/three/examples/jsm/controls/OrbitControls.js';
+import { RoomEnvironment } from '../../vendor/three/examples/jsm/environments/RoomEnvironment.js';
 import { PAL, toy, soft, blobShadow, shade } from './style.js';
 import { buildShell, blinkAt } from './shell.js';
 import { makeCat, reactCat, updateCats } from './cats.js';

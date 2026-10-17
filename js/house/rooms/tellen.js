@@ -1,9 +1,9 @@
 /* Tellen: een aquariumkamer. Een groot aquarium op een kastje, met zand, waterplantjes, een
    kasteeltje, rondzwemmende visjes en opstijgende bubbels. Verder een zitbank, een kleed en een
    staande lamp. De bewoner is een donkere kat met een duikbril. */
-import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import * as THREE from '../../../vendor/three/build/three.module.js';
+import { RoundedBoxGeometry } from '../../../vendor/three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from '../../../vendor/three/examples/jsm/utils/BufferGeometryUtils.js';
 import { roomBuilder, mat, vc, toyVC } from './build.js';
 
 const FISH = ['#FFAD66', '#FFD45C', '#FF8EB4', '#FF8E8E', '#B190EC'];

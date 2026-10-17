@@ -8,7 +8,7 @@ import {
  	PointLight,
  	Scene,
  	Object3D,
-} from 'three';
+} from '../../../build/three.module.js';
 
 /**
  * This class represents a scene with a basic room setup that can be used as
@@ -28,7 +28,7 @@ import {
  * ```
  *
  * @augments Scene
- * @three_import import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+ * @three_import import { RoomEnvironment } from './RoomEnvironment.js';
  */
 class RoomEnvironment extends Scene {
 

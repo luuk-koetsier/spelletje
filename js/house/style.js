@@ -1,6 +1,6 @@
 /* Stijl van het 3D-huis: één pastelpalet en gedeelde materialen.
    Basis roze en lila, per kamer één accentkleur. */
-import * as THREE from 'three';
+import * as THREE from '../../vendor/three/build/three.module.js';
 
 export const PAL = {
   // basis

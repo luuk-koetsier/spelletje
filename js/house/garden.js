@@ -6,9 +6,9 @@
    ballonnen en een vlinder zijn de dingen in de lucht (flyers).
    Vaste onderdelen zijn per materiaal samengevoegd; gras en bloemen zijn InstancedMesh.
    Losse onderdelen die later bewegen (hond, klepje, gieter, bal, bloem, flyers) zijn eigen meshes. */
-import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import * as THREE from '../../vendor/three/build/three.module.js';
+import { RoundedBoxGeometry } from '../../vendor/three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from '../../vendor/three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PAL, shade, blobShadow } from './style.js';
 
 const GROUND = -0.2;   // hoogte van het gras (gelijk aan shell.js)
