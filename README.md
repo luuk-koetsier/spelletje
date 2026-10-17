@@ -33,8 +33,8 @@ in een kamer opent ook die kamer.
 | Vormen | Klaslokaaltje met een schoolbord vol krijtvormen, schooltafeltjes en een vormenstoof | Lila juf-kat met een brilletje | Vormen naar de juiste schaduw slepen op het schoolbord |
 | Tellen | Aquariumkamer met rondzwemmende visjes, bubbels, een zitbank en een lamp | Donkere kat met een duikbril | Tellen in het aquarium: klik het goede cijfer |
 | Kleuren | Atelier met een schildersezel, verfpotten, spetters en tekeningen aan de muur | Witte kat met een kwast | Zes kleurplaten (kat, raket, vis, raceauto, dino, kasteel) en vrij tekenen op de schildersezel |
-| Verkleden | Kleedkamer met een podium, een kaptafel vol lampjes, een kledingrek en hoeden | Roze kat met een hoge hoed | De kat op het podium aankleden: hoeden, capes, vleugels, een vriendje en meer |
-| Speelkamer | Mini-circus met tentdoek, vlaggetjes, circusballen, een xylofoon en een draaimolentje | Bruine kat met een kroontje | Circustent vol knopjes: xylofoon, bellenblaas, draaimolen, verrassingsdoosjes |
+| Verkleden | Kleedkamer met een podium, een kaptafel vol lampjes, een kledingrek en hoeden | Roze kat met een hoge hoed | De kat op het podium aankleden: hoeden, capes, vleugels, een vriendje en meer. Sticker na 4 soorten kleding |
+| Speelkamer | Mini-circus met tentdoek, vlaggetjes, circusballen, een xylofoon en een draaimolentje | Bruine kat met een kroontje | Circustent vol knopjes: xylofoon, bellenblaas, draaimolen, verrassingsdoosjes. Sticker na 5 verschillende speeltjes |
 | Stickers | Slaapkamertje met een bed, een maantje als nachtlampje en een muur vol stickers | Grijze kat met een slaapmuts | 18 te verdienen stickers vrij in je plakboek plakken |
 
 Met de spelletjes verdien je stickers voor het stickerboek. Er is geen "game
