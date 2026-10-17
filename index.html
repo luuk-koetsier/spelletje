@@ -1495,7 +1495,8 @@ function speak(text) {
   if (!soundOn || !("speechSynthesis" in window)) return;
   if (!nlVoice) findVoice();
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
+  // Safari leest "Sep" als afkorting van september; "Sepp" klinkt goed en is geen afkorting.
+  const u = new SpeechSynthesisUtterance(String(text).replace(/\bSep\b/g, "Sepp"));
   u.lang = "nl-NL";
   if (nlVoice) u.voice = nlVoice;
   u.rate = 1;
