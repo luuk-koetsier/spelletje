@@ -1,7 +1,7 @@
 import {
 	BoxGeometry,
 	Vector3
-} from 'three';
+} from '../../../build/three.module.js';
 
 const _tempNormal = new Vector3();
 
@@ -49,7 +49,7 @@ function getUv( faceDirVector, normal, uvAxis, projectionAxis, radius, sideLengt
  * ```
  *
  * @augments BoxGeometry
- * @three_import import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+ * @three_import import { RoundedBoxGeometry } from './RoundedBoxGeometry.js';
  */
 class RoundedBoxGeometry extends BoxGeometry {
 

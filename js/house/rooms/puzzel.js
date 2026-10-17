@@ -1,8 +1,8 @@
 /* Puzzel: een hobbyzolder. Schuine balken in de hoeken, een half gelegde puzzel op een gestreept
    kleed met losse stukjes ernaast, een kist vol stukjes met het deksel ertegenaan, en een plank
    met dozen. De bewoner is een zandkleurige kat met een sjaal. */
-import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import * as THREE from '../../../vendor/three/build/three.module.js';
+import { RoundedBoxGeometry } from '../../../vendor/three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { roomBuilder, mat } from './build.js';
 
 // Een puzzelstukje van 1 bij 1 (plus nopjes): nop rechts en boven, gat links en onder.

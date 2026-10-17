@@ -91,6 +91,11 @@ Start eerst een server vanuit de repo-root:
 python3 -m http.server 8765
 ```
 
+- **Safari 15-check**: `cd tools && node compat.mjs`. Het spel moet blijven werken
+  op een iPad Air 2 (iPadOS 15.8, kan niet verder bijgewerkt worden). Daarom geen
+  import map en geen JavaScript of CSS die nieuwer is dan Safari 15. De
+  three.js-bibliotheek in `vendor/three/build/three.core.js` is daarvoor eenmalig
+  omgezet met esbuild (`--target=safari15`); doe dat opnieuw na een update van three.js.
 - **Smoke-test**: `cd tools && node smoke.mjs`. Laadt het huis in headless
   Chromium met `?debug=1` en controleert onder meer de kamertikken, de
   verrassingen en hun tikvlakken, de katten, draaien en de adresbalk op een

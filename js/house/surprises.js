@@ -6,9 +6,9 @@
    geluidje en een zinnetje via window.KH (die zwijgen zelf als het geluid uit staat).
    De deurbel, de klok en het vogelhuisje worden hier gebouwd; de rest staat al in de tuin (garden.js),
    in de huisvorm (shell.js, de voordeur) of is een kat (cats.js, Mauwtje). */
-import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import * as THREE from '../../vendor/three/build/three.module.js';
+import { RoundedBoxGeometry } from '../../vendor/three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from '../../vendor/three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PAL, shade } from './style.js';
 import { reactCat } from './cats.js';
 

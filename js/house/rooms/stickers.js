@@ -2,8 +2,8 @@
    maantje als nachtlampje (met een warm lampje), een muur vol stickers, een groot open plakboek
    op een kleed met losse stickervellen en een boek, en sloffen voor het bed.
    De bewoner is een grijze kat met een slaapmuts, opgerold op het bed. */
-import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import * as THREE from '../../../vendor/three/build/three.module.js';
+import { RoundedBoxGeometry } from '../../../vendor/three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { roomBuilder, mat } from './build.js';
 
 function starShape(R, r) {

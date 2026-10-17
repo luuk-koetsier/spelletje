@@ -1,9 +1,9 @@
 /* Modellen laden (GLB) met cache en foutafhandeling.
    loadModel geeft bij een fout null en logt een waarschuwing, maar gooit nooit.
    Met ?failmodels=1 geeft loadModel altijd null (om te testen dat het huis dan heel blijft). */
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
+import { GLTFLoader } from '../../vendor/three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from '../../vendor/three/examples/jsm/libs/meshopt_decoder.module.js';
+import { clone as skeletonClone } from '../../vendor/three/examples/jsm/utils/SkeletonUtils.js';
 
 const BASE = new URL('../../assets/models/', import.meta.url).href;
 const FAIL = new URLSearchParams(location.search).get('failmodels') === '1';

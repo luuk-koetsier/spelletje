@@ -7,14 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap">
-<script type="importmap">
-{
-  "imports": {
-    "three": "./vendor/three/build/three.module.js",
-    "three/addons/": "./vendor/three/examples/jsm/"
-  }
-}
-</script>
 <style>
   :root {
     --blauw: #4D96FF;
@@ -495,6 +487,7 @@
     position: absolute; bottom: 13%; left: 8%;
     width: 30%; height: 7%;
     border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 40%, var(--c, #ffd93b), var(--c, #ffd93b));
     background: radial-gradient(ellipse at 50% 40%, var(--c, #ffd93b), color-mix(in srgb, var(--c, #ffd93b) 70%, #000 12%));
     opacity: .85;
     box-shadow: inset 0 .3vmin .5vmin rgba(0,0,0,.2);
@@ -3281,5 +3274,13 @@ updateSoundBtn();
 </script>
 
 <script type="module" src="js/house/main.js"></script>
+<script>
+// Laadt het 3D-huis niet (bijvoorbeeld een te oude browser), laat dat dan zien in plaats van eeuwig te laden.
+setTimeout(function () {
+  if (!window.__hub3d && document.getElementById("load") && window.toonFout) {
+    toonFout("het huis kon niet laden op dit apparaat (" + navigator.userAgent.replace(/.*OS ([0-9_]+).*/, "iOS $1") + ")");
+  }
+}, 20000);
+</script>
 </body>
 </html>

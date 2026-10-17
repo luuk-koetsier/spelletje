@@ -6,8 +6,8 @@
    - alle schaduwvlekjes samen.
    Alles staat in de kamergroep (slot.group), met de oorsprong midden op de kamervloer:
    x van -size.x/2 tot +size.x/2, z van -size.z/2 (achterwand) tot +size.z/2 (opening). */
-import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import * as THREE from '../../../vendor/three/build/three.module.js';
+import { mergeGeometries } from '../../../vendor/three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const Q = new THREE.Quaternion(), E = new THREE.Euler(), V = new THREE.Vector3(), S = new THREE.Vector3();
 export function mat(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) {

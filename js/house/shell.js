@@ -4,9 +4,9 @@
    glijbaan langs de zijkant die de drie verdiepingen verbindt.
    Alles is in code opgebouwd en per materiaal samengevoegd tot een handvol draw calls.
    Kleuren zitten in vertex-kleuren, zodat veel onderdelen één materiaal kunnen delen. */
-import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import * as THREE from '../../vendor/three/build/three.module.js';
+import { RoundedBoxGeometry } from '../../vendor/three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from '../../vendor/three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PAL, shade } from './style.js';
 import { drawIcon } from './icons.js';
 import { ROOMS } from './rooms/index.js';

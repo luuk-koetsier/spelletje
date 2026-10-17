@@ -1,8 +1,8 @@
 /* Memory: een spelletjeskamer. Een laag tafeltje met omgedraaide kaartjes (twee liggen open en
    vormen een paar), zitkussens, een kast met een stapel spellendozen ernaast en een grote
    dobbelsteen. De bewoner is een crèmekleurige kat met een strik. */
-import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import * as THREE from '../../../vendor/three/build/three.module.js';
+import { RoundedBoxGeometry } from '../../../vendor/three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { roomBuilder, mat } from './build.js';
 
 function heartShape(s) {

@@ -2,8 +2,8 @@
    gordijntjes erachter, een kaptafel met een spiegel vol lampjes (met een warm lampje ervoor),
    een krukje, een kledingrek met jurkjes, een hoedenplank en een paar schoentjes.
    De bewoner is een roze kat met een hoge hoed, op het podium. */
-import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import * as THREE from '../../../vendor/three/build/three.module.js';
+import { RoundedBoxGeometry } from '../../../vendor/three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { roomBuilder, mat, along } from './build.js';
 
 export function furnish(slot, kit) {
