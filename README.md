@@ -91,6 +91,13 @@ Start eerst een server vanuit de repo-root:
 python3 -m http.server 8765
 ```
 
+- **Stem**: het spel speelt opnames af uit `stem/` (gemaakt met de nagemaakte stem van Luuk
+  via Fish Audio). Een zin zonder opname spreekt de computerstem uit.
+  `node tools/stem-zinnen.mjs` verzamelt alle zinnen in `stem/zinnen.json`;
+  `node tools/stem-maak.mjs` maakt de ontbrekende opnames (nodig: `FISH_API_KEY`,
+  `FISH_VOICE_ID` en `api.fish.audio` als toegestaan domein). Afluisteren kan op
+  `/stem/overzicht.html`. Na het toevoegen van nieuwe zinnen: beide scripts opnieuw draaien.
+  `node tools/stem-test.mjs` controleert dat alles wat het spel zegt in de lijst staat.
 - **Safari 15-check**: `cd tools && node compat.mjs`. Het spel moet blijven werken
   op een iPad Air 2 (iPadOS 15.8, kan niet verder bijgewerkt worden). Daarom geen
   import map en geen JavaScript of CSS die nieuwer is dan Safari 15. De
