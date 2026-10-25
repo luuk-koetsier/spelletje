@@ -92,7 +92,11 @@ python3 -m http.server 8765
 ```
 
 - **Stem**: het spel speelt opnames af uit `stem/` (gemaakt met de nagemaakte stem van Luuk
-  via Fish Audio). Een zin zonder opname spreekt de computerstem uit.
+  via Fish Audio). Heeft een zin uit `stem/zinnen.json` nog geen mp3, dan maakt de
+  Vercel-functie `api/stem.js` hem live met de stem van Luuk. Die gebruikt `FISH_API_KEY` en
+  `FISH_VOICE_ID` uit de Vercel-instellingen, maakt alleen zinnen uit de lijst en laat elke
+  opname een jaar in de Vercel-cache staan. Lukt dat niet (of draait het spel niet op
+  Vercel), dan spreekt de computerstem de zin uit.
   `node tools/stem-zinnen.mjs` verzamelt alle zinnen in `stem/zinnen.json`;
   `node tools/stem-maak.mjs` maakt de ontbrekende opnames (nodig: `FISH_API_KEY`,
   `FISH_VOICE_ID` en `api.fish.audio` als toegestaan domein). Afluisteren kan op

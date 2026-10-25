@@ -1501,9 +1501,11 @@ if ("speechSynthesis" in window) {
   speechSynthesis.onvoiceschanged = findVoice;
 }
 // Opgenomen stem: stem/index.json koppelt een zin aan een mp3 (gemaakt met tools/stem-maak.mjs).
-// Is er van een zin geen opname, dan spreekt de computerstem hem uit.
-let stemIndex = {};
+// Staat een zin wel in stem/zinnen.json maar heeft hij nog geen mp3, dan maakt de Vercel-functie
+// api/stem hem met de stem van Luuk. Lukt dat niet, dan spreekt de computerstem de zin uit.
+let stemIndex = {}, stemZinnen = new Set(), stemApiWerkt = true;
 fetch("stem/index.json").then(r => (r.ok ? r.json() : {})).then(j => { stemIndex = j || {}; }).catch(() => {});
+fetch("stem/zinnen.json").then(r => (r.ok ? r.json() : [])).then(j => { stemZinnen = new Set(j || []); }).catch(() => {});
 const stemAudio = new Audio();
 stemAudio.preload = "auto";
 // iOS speelt geluid pas af na een aanraking. Speel bij de eerste tik een stil geluidje af,
@@ -1520,13 +1522,18 @@ addEventListener("pointerdown", ontgrendelStem, true);
 
 function speak(text) {
   if (!soundOn) return;
-  const opname = stemIndex[String(text)];
-  if (opname) {
+  const zin = String(text), opname = stemIndex[zin];
+  const viaApi = !opname && stemApiWerkt && stemZinnen.has(zin);
+  if (opname || viaApi) {
     if ("speechSynthesis" in window) speechSynthesis.cancel();
     stemAudio.pause();
-    stemAudio.src = "stem/" + opname;
+    stemAudio.src = opname ? "stem/" + opname : "api/stem?zin=" + encodeURIComponent(zin);
     const p = stemAudio.play();
-    if (p && p.catch) p.catch(() => spreekMetComputer(text));
+    if (p && p.catch) p.catch(e => {
+      if (e && e.name === "AbortError") return; // alweer een nieuwe zin gestart
+      if (viaApi) stemApiWerkt = false; // bv. lokaal zonder Vercel: niet steeds opnieuw proberen
+      spreekMetComputer(text);
+    });
     return;
   }
   spreekMetComputer(text);

@@ -1,9 +1,11 @@
 // Test de opgenomen stem: (1) alles wat het spel zegt staat in stem/zinnen.json,
 // (2) met een opname speelt het spel die af, (3) zonder opname valt het terug op de computerstem.
 import { chromium } from 'playwright';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 const zinnen = new Set(JSON.parse(readFileSync(new URL('../stem/zinnen.json', import.meta.url), 'utf8')));
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-proxy-server', '--autoplay-policy=no-user-gesture-required'] });
+const EXE = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const b0 = { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-proxy-server', '--autoplay-policy=no-user-gesture-required'] };
+const b = await chromium.launch(existsSync(EXE) ? { ...b0, executablePath: EXE } : b0);
 const p = await b.newPage({ viewport: { width: 1024, height: 768 } });
 const errs = []; p.on('pageerror', e => errs.push(e.message));
 let ok = true; const fail = m => { console.log('FAIL: ' + m); ok = false; };
@@ -22,6 +24,27 @@ const r = await p.evaluate(async () => {
   speak('Deze zin heeft geen opname.'); await new Promise(z => setTimeout(z, 100));
   return { met, zonderTts: tts - met.tts };
 });
+// (4) zin uit zinnen.json zonder mp3: via api/stem; geeft die een fout, dan de computerstem.
+let apiStatus = 200;
+await p.route('**/api/stem?*', r => apiStatus === 200 ? r.fulfill({ contentType: 'audio/wav', body: STIL }) : r.fulfill({ status: apiStatus, body: 'x' }));
+const api = await p.evaluate(async () => {
+  let tts = 0; speechSynthesis.speak = () => { tts++; };
+  const zin = [...stemZinnen].find(z => !stemIndex[z]);
+  speak(zin); await new Promise(z => setTimeout(z, 300));
+  return { zin, src: stemAudio.src, tts };
+});
+if (!api.src.includes('/api/stem?zin=' + encodeURIComponent(api.zin))) fail(`api-stem niet gebruikt (src=${api.src})`);
+if (api.tts !== 0) fail('computerstem sprak terwijl api-stem werkte');
+apiStatus = 404;
+const api2 = await p.evaluate(async () => {
+  let tts = 0; speechSynthesis.speak = () => { tts++; };
+  const zin = [...stemZinnen].filter(z => !stemIndex[z])[1];
+  speak(zin); await new Promise(z => setTimeout(z, 500));
+  return { tts, werkt: stemApiWerkt };
+});
+if (api2.tts !== 1) fail('bij een api-fout viel de computerstem niet in');
+if (api2.werkt) fail('na een api-fout bleef het spel de api proberen');
+await p.evaluate(() => { stemApiWerkt = true; });
 if (!r.met.src.endsWith('/stem/proef.mp3')) fail(`opname niet afgespeeld (src=${r.met.src})`);
 if (r.met.tts !== 0) fail('computerstem sprak terwijl er een opname was');
 if (r.zonderTts !== 1) fail('zonder opname viel de computerstem niet in');
