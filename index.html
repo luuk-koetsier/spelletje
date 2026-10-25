@@ -1500,7 +1500,42 @@ if ("speechSynthesis" in window) {
   findVoice();
   speechSynthesis.onvoiceschanged = findVoice;
 }
+// Opgenomen stem: stem/index.json koppelt een zin aan een mp3 (gemaakt met tools/stem-maak.mjs).
+// Is er van een zin geen opname, dan spreekt de computerstem hem uit.
+let stemIndex = {};
+fetch("stem/index.json").then(r => (r.ok ? r.json() : {})).then(j => { stemIndex = j || {}; }).catch(() => {});
+const stemAudio = new Audio();
+stemAudio.preload = "auto";
+// iOS speelt geluid pas af na een aanraking. Speel bij de eerste tik een stil geluidje af,
+// dan mag dit audio-element daarna ook afspelen vanuit een timer.
+const STIL = "data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA";
+function ontgrendelStem() {
+  removeEventListener("pointerdown", ontgrendelStem, true);
+  if (stemAudio.src) return;
+  stemAudio.src = STIL;
+  const p = stemAudio.play();
+  if (p && p.catch) p.catch(() => {});
+}
+addEventListener("pointerdown", ontgrendelStem, true);
+
 function speak(text) {
+  if (!soundOn) return;
+  const opname = stemIndex[String(text)];
+  if (opname) {
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+    stemAudio.pause();
+    stemAudio.src = "stem/" + opname;
+    const p = stemAudio.play();
+    if (p && p.catch) p.catch(() => spreekMetComputer(text));
+    return;
+  }
+  spreekMetComputer(text);
+}
+function stopStem() {
+  stemAudio.pause();
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+}
+function spreekMetComputer(text) {
   if (!soundOn || !("speechSynthesis" in window)) return;
   if (!nlVoice) findVoice();
   speechSynthesis.cancel();
@@ -1688,7 +1723,7 @@ const scenes = {};
 let huidigeCleanup = null;
 function gaNaar(naam) {
   if (huidigeCleanup) { huidigeCleanup(); huidigeCleanup = null; }
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  stopStem();
   const app = $("#app");
   app.innerHTML = "";
   huidigeCleanup = scenes[naam](app) || null;
@@ -1713,7 +1748,7 @@ function launchGame(id) {
 }
 function backToHouse() {
   if (huidigeCleanup) { huidigeCleanup(); huidigeCleanup = null; }
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  stopStem();
   $("#app").classList.remove("active");
   $("#app").innerHTML = "";
   document.body.classList.remove("in-game");
@@ -1730,7 +1765,7 @@ window.KH = {
     soundOn = !soundOn;
     opslag.set("kh_sound", soundOn ? "aan" : "uit");
     updateSoundBtn();
-    if (!soundOn && "speechSynthesis" in window) speechSynthesis.cancel();
+    if (!soundOn) stopStem();
     return soundOn;
   },
   pop() { sfx.plop(); },
@@ -3292,7 +3327,7 @@ $("#sound-btn").addEventListener("click", () => {
   opslag.set("kh_sound", soundOn ? "aan" : "uit");
   updateSoundBtn();
   if (soundOn) { sfx.goed(); speak("Geluid staat weer aan!"); }
-  else if ("speechSynthesis" in window) speechSynthesis.cancel();
+  else stopStem();
 });
 updateSoundBtn();
 

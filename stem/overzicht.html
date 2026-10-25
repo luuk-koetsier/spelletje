@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stem van het huis</title>
+<style>
+  :root { --bg: #fff8f0; --kaart: #fff; --tekst: #4a3b33; --zacht: #9a8a80; --roze: #e8457f; --groen: #3aa85b; }
+  body { margin: 0; background: var(--bg); color: var(--tekst); font: 17px/1.4 system-ui, -apple-system, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 22px; margin: 8px 0 4px; }
+  p.uitleg { color: var(--zacht); margin: 0 0 16px; }
+  ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  li { background: var(--kaart); border-radius: 14px; padding: 10px 12px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  button { flex: 0 0 auto; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--roze); color: #fff; font-size: 18px; }
+  button:disabled { background: #d8cfc8; }
+  .nr { color: var(--zacht); font-size: 13px; min-width: 2ch; }
+  .geen { color: var(--zacht); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Stem van het huis</h1>
+  <p class="uitleg" id="uitleg">Laden...</p>
+  <ol id="lijst"></ol>
+</main>
+<script>
+  // Toont alle zinnen uit zinnen.json met een afspeelknop als er een opname is (index.json).
+  const audio = new Audio();
+  Promise.all([fetch("zinnen.json").then(r => r.json()), fetch("index.json").then(r => (r.ok ? r.json() : {})).catch(() => ({}))])
+    .then(([zinnen, index]) => {
+      const klaar = zinnen.filter(z => index[z]).length;
+      document.getElementById("uitleg").textContent =
+        klaar + " van " + zinnen.length + " zinnen zijn opgenomen. Klinkt er een raar? Noem de zin of het nummer, dan maak ik hem opnieuw.";
+      const lijst = document.getElementById("lijst");
+      zinnen.forEach((z, i) => {
+        const li = document.createElement("li");
+        const knop = document.createElement("button");
+        knop.textContent = "▶";
+        knop.setAttribute("aria-label", "Speel af: " + z);
+        if (index[z]) knop.onclick = () => { audio.src = index[z]; audio.play(); };
+        else knop.disabled = true;
+        const nr = document.createElement("span"); nr.className = "nr"; nr.textContent = i + 1;
+        const tekst = document.createElement("span"); tekst.textContent = z;
+        li.append(knop, nr, tekst);
+        if (!index[z]) { const g = document.createElement("span"); g.className = "geen"; g.textContent = "nog geen opname"; li.append(g); }
+        lijst.append(li);
+      });
+    });
+</script>
+</body>
+</html>
