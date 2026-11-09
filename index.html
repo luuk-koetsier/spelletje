@@ -4,9 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Het Huis van Sep</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap">
+<meta name="description" content="Een vrolijk 3D-kattenhuis vol spelletjes voor kleuters: memory, puzzels, vormen, tellen, kleuren en meer.">
+<meta name="theme-color" content="#7FCBEA">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Huis van Sep">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="preload" href="vendor/fonts/baloo-2-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="vendor/three/build/three.module.js">
+<link rel="modulepreload" href="vendor/three/build/three.core.js">
 <script type="importmap">
 {
   "imports": {
@@ -16,6 +25,12 @@
 }
 </script>
 <style>
+  @font-face { font-family: 'Baloo 2'; font-style: normal; font-weight: 400 800; font-display: swap;
+    src: url(vendor/fonts/baloo-2-latin-wght-normal.woff2) format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family: 'Baloo 2'; font-style: normal; font-weight: 400 800; font-display: swap;
+    src: url(vendor/fonts/baloo-2-latin-ext-wght-normal.woff2) format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
   :root {
     --blauw: #4D96FF;
     --groen: #57C24D;
@@ -776,7 +791,7 @@
     pointer-events: none;
   }
   #book-page::before {
-    content: "Stickerboek van SEP";
+    content: "Plak je stickers waar je maar wilt";
     position: absolute; top: 1vmin; left: 0; right: 0;
     text-align: center;
     font-size: clamp(18px, 4vmin, 36px);
@@ -1146,7 +1161,8 @@
 
   /* ---------- effecten ---------- */
   #fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 450; overflow: hidden; }
-  .confetti-bit { position: absolute; top: -6vh; font-size: clamp(16px, 4vmin, 34px); animation: confetti-fall linear forwards; }
+  .confetti-bit { position: absolute; top: -6vh; box-shadow: inset 0 -.25vmin 0 rgba(0,0,0,.12); will-change: transform;
+    animation: confetti-fall cubic-bezier(.22,.55,.5,1) forwards; }
   .fly-thing { position: absolute; font-size: clamp(40px, 10vmin, 90px); animation: fly-across linear forwards; filter: drop-shadow(2px 4px 0 rgba(0,0,0,.2)); }
   .float-thing { position: absolute; font-size: clamp(36px, 9vmin, 80px); animation: float-up 2.2s ease-out forwards; }
   #big-msg {
@@ -1175,7 +1191,7 @@
   @keyframes wiggle { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } 75% { transform: rotate(14deg); } }
   @keyframes spin-once { to { transform: rotate(360deg); } }
   @keyframes confetti-fall {
-    to { transform: translateY(115vh) rotate(600deg); }
+    to { transform: translate(var(--dx, 0), 118vh) rotate(var(--rot, 600deg)) rotateX(var(--kantel, 720deg)); }
   }
   @keyframes fly-across {
     from { transform: translateX(-15vw) rotate(-8deg); }
@@ -1242,9 +1258,118 @@
     70% { transform: translateY(0) rotate(300deg); }
     85% { transform: translateY(-2vmin) rotate(340deg); }
   }
+
+  /* ============================================================
+     Studio-laag: startscherm, overgangen, beloning, knoppen
+     ============================================================ */
+  #load { background: linear-gradient(#8FD3F0, #BFE9F5 55%, #E6F6EE); transition: opacity .6s, background 1.1s; }
+  #load.klaar { background: linear-gradient(rgba(127,203,234,.62), rgba(169,228,245,.34) 55%, rgba(233,247,238,.5)); }
+  #load.weg { opacity: 0; pointer-events: none; }
+  #load .box { display: flex; flex-direction: column; align-items: center; padding: 4vmin; }
+  #load .logo { width: clamp(96px, 24vmin, 190px); height: auto; border-radius: 24%;
+    box-shadow: 0 1.2vmin 0 rgba(30,90,130,.22), 0 3vmin 6vmin rgba(20,70,110,.28);
+    border: .9vmin solid #fff; animation: logo-in .7s cubic-bezier(.2,1.4,.4,1) both, floaty 3.2s ease-in-out .7s infinite; }
+  .woordmerk { margin: 3.2vmin 0 0; font-size: clamp(34px, 9.5vmin, 86px); font-weight: 800; line-height: .95; color: #fff;
+    letter-spacing: -.015em; text-align: center; transform: rotate(-2deg);
+    text-shadow: 0 .5vmin 0 var(--toy-teal-d), 0 1vmin 0 rgba(150,25,80,.35), 0 2vmin 3.5vmin rgba(30,60,100,.3);
+    -webkit-text-stroke: .35vmin var(--toy-teal-d); paint-order: stroke fill;
+    animation: logo-in .7s cubic-bezier(.2,1.4,.4,1) .12s both; }
+  .woordmerk span { display: inline-block; white-space: nowrap; }
+  .laadbalk { margin-top: 5vmin; width: min(46vmin, 62vw); height: clamp(12px, 2.4vmin, 20px); border-radius: 999px;
+    background: rgba(255,255,255,.6); box-shadow: inset 0 .3vmin .5vmin rgba(30,90,130,.22); overflow: hidden; }
+  .laadbalk i { display: block; height: 100%; width: 38%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--toy-yellow), var(--toy-orange), var(--toy-teal));
+    animation: laad-schuif 1.25s ease-in-out infinite alternate; }
+  #load.klaar .laadbalk { display: none; }
+  #startBtn { display: none; margin-top: 4.5vmin; align-items: center; gap: .35em; border: .7vmin solid #fff; border-radius: 999px;
+    padding: .3em 1.15em .3em .85em; font: 800 clamp(26px, 6.6vmin, 58px)/1.2 'Baloo 2', system-ui, sans-serif; color: #fff; cursor: pointer;
+    background: linear-gradient(#7BE06B, #57C24D 55%, #3DA53A);
+    text-shadow: 0 .3vmin 0 rgba(20,90,30,.45);
+    box-shadow: 0 1.1vmin 0 #2C8530, 0 2.6vmin 4vmin rgba(20,80,40,.35), inset 0 .5vmin 0 rgba(255,255,255,.45);
+    transition: transform .12s cubic-bezier(.2,.8,.3,1), box-shadow .12s; }
+  #startBtn svg { width: 1em; height: 1em; fill: #fff; filter: drop-shadow(0 .3vmin 0 rgba(20,90,30,.45)); }
+  #load.klaar #startBtn { display: inline-flex; animation: logo-in .55s cubic-bezier(.2,1.4,.4,1) both, start-puls 1.7s ease-in-out .6s infinite; }
+  #startBtn:active { transform: translateY(.8vmin) scale(.97); box-shadow: 0 .3vmin 0 #2C8530, 0 1vmin 2vmin rgba(20,80,40,.3); animation: none !important; }
+  @keyframes logo-in { from { transform: scale(.3) rotate(-10deg); opacity: 0; } }
+  @keyframes laad-schuif { from { transform: translateX(-20%); } to { transform: translateX(185%); } }
+  @keyframes start-puls { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+  #ui { transition: opacity .7s; }
+  body.voorstart #ui { opacity: 0; }
+  #musicBtn { top: 24px; right: 158px; }
+  #musicBtn svg { stroke: var(--toy-purple); }
+  .rbtn.uit svg { opacity: .32; }
+  .rbtn.uit::after { content: ""; position: absolute; width: 62%; height: 4px; border-radius: 4px; background: var(--toy-coral); transform: rotate(-45deg); }
+  .rbtn:focus-visible, .icon-btn:focus-visible, #startBtn:focus-visible, .card .play:focus-visible { outline: 4px solid var(--toy-yellow); outline-offset: 3px; }
+  @media (max-width: 560px) {
+    .title-text { font-size: 22px; } .title-badge { width: 42px; height: 42px; } .title-badge svg { width: 24px; height: 24px; }
+    .title-wrap { top: 14px; left: 14px; gap: 8px; }
+    .rbtn { width: 46px; height: 46px; } .rbtn svg { width: 22px; height: 22px; }
+    #soundBtn { top: 14px; right: 14px; } #homeBtn { top: 14px; right: 68px; } #musicBtn { top: 14px; right: 122px; }
+    .hint { font-size: 14px; bottom: 16px; white-space: nowrap; }
+  }
+  @media (max-width: 420px) { .title-text { display: none; } }
+
+  /* knoppen in de spelkamers: zelfde familie als het 3D-huis */
+  .icon-btn { background: #fff; border: 4px solid #fff; cursor: pointer; flex: 0 0 auto;
+    box-shadow: 0 .14em 0 rgba(26,31,29,.16), 0 .26em .5em rgba(0,0,0,.16); }
+  .icon-btn svg { width: 52%; height: 52%; stroke: var(--toy-teal-d); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  #back-btn svg { stroke: var(--toy-coral); }
+  .level-btn, .dress-btn, .big-btn { cursor: pointer; }
+  .dress-btn { white-space: nowrap; }
+
+  /* vangnet-menu als het apparaat geen 3D aankan */
+  body.geen3d #scene { display: none !important; }
+  #menu2d { position: absolute; inset: clamp(84px, 16vmin, 120px) 4vmin 4vmin; display: grid; gap: 2.4vmin; pointer-events: auto;
+    grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr; }
+  @media (max-aspect-ratio: 1/1) { #menu2d { grid-template-columns: repeat(2, 1fr); } }
+  #menu2d button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1em; cursor: pointer;
+    border: .8vmin solid #fff; border-radius: 4vmin; color: #fff; font: 800 clamp(18px, 4.2vmin, 38px)/1.1 'Baloo 2', system-ui, sans-serif;
+    background: linear-gradient(var(--a), var(--b)); text-shadow: 0 .3vmin 0 var(--c);
+    box-shadow: 0 1.1vmin 0 var(--c), 0 2.4vmin 3.4vmin rgba(0,0,0,.2); transition: transform .12s; }
+  #menu2d button:active { transform: translateY(.8vmin); box-shadow: 0 .3vmin 0 var(--c); }
+  #menu2d span { font-size: 2.1em; line-height: 1.1; filter: drop-shadow(0 .5vmin 0 rgba(0,0,0,.18)); }
+
+  /* irisveeg tussen huis en spel */
+  #veeg { position: fixed; inset: 0; z-index: 480; pointer-events: none; display: grid; place-items: center;
+    clip-path: circle(0 at 50% 50%); opacity: 1; }
+  #veeg img { width: clamp(80px, 20vmin, 150px); border-radius: 24%; border: .8vmin solid #fff; transform: scale(.4); opacity: 0;
+    box-shadow: 0 1vmin 0 rgba(0,0,0,.14), 0 2.4vmin 5vmin rgba(0,0,0,.2); }
+  #veeg.in { pointer-events: auto; clip-path: circle(75vmax at 50% 50%); transition: clip-path .43s cubic-bezier(.5,0,.75,.4); }
+  #veeg.in img { transform: scale(1); opacity: 1; transition: transform .4s cubic-bezier(.2,1.5,.4,1) .08s, opacity .2s .08s; }
+  #veeg.uit { pointer-events: auto; clip-path: circle(75vmax at 50% 50%); opacity: 0; transition: opacity .36s ease-in; }
+  #veeg.uit img { transform: scale(1.25); opacity: 1; transition: transform .36s ease-in; }
+
+  /* beloning: nieuwe sticker */
+  #beloning { position: fixed; inset: 0; z-index: 440; display: grid; place-items: center; overflow: hidden; cursor: pointer;
+    background: radial-gradient(circle, rgba(40,30,70,.35), rgba(30,20,60,.72)); animation: bel-in .3s both; }
+  #beloning.weg { opacity: 0; transition: opacity .33s; pointer-events: none; }
+  #beloning .stralen { position: absolute; left: 50%; top: 50%; width: 190vmax; height: 190vmax; margin: -95vmax 0 0 -95vmax;
+    background: repeating-conic-gradient(rgba(255,226,120,.3) 0 10deg, transparent 10deg 22deg);
+    -webkit-mask-image: radial-gradient(circle, #000 12%, transparent 46%); mask-image: radial-gradient(circle, #000 12%, transparent 46%);
+    animation: spin-slow 16s linear infinite; }
+  .b-kaart { position: relative; display: flex; flex-direction: column; align-items: center; animation: logo-in .55s cubic-bezier(.2,1.5,.4,1) both; }
+  .b-lint { font-size: clamp(26px, 6.4vmin, 56px); font-weight: 800; color: #fff; padding: .12em 1em .16em; border-radius: 999px;
+    background: linear-gradient(#FF8A3C, var(--toy-coral)); border: .6vmin solid #fff; transform: rotate(-3deg); z-index: 1;
+    text-shadow: 0 .3vmin 0 rgba(140,30,30,.45); box-shadow: 0 .8vmin 0 rgba(120,20,40,.45), 0 2vmin 4vmin rgba(0,0,0,.3); }
+  .b-sticker { margin-top: -1.6vmin; width: clamp(150px, 40vmin, 300px); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
+    background: radial-gradient(circle at 34% 28%, #fff, #FFF6DA 62%, #FFE59A); border: 1.6vmin solid #fff;
+    box-shadow: 0 1.2vmin 0 rgba(0,0,0,.18), 0 4vmin 8vmin rgba(0,0,0,.4), 0 0 9vmin rgba(255,220,110,.75);
+    animation: bel-wiebel 2.4s ease-in-out .5s infinite; }
+  .b-sticker span { font-size: clamp(84px, 23vmin, 172px); line-height: 1; filter: drop-shadow(0 .8vmin .6vmin rgba(0,0,0,.2)); }
+  .b-teller { margin-top: 2.6vmin; color: #fff; font-weight: 700; font-size: clamp(16px, 3.4vmin, 28px); text-shadow: 0 .25vmin .5vmin rgba(0,0,0,.4); }
+  .b-balk { margin-top: 1.2vmin; width: clamp(180px, 44vmin, 330px); height: clamp(10px, 2.2vmin, 18px); border-radius: 999px;
+    background: rgba(255,255,255,.28); overflow: hidden; }
+  .b-balk i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--toy-yellow), var(--toy-orange)); }
+  @keyframes bel-in { from { opacity: 0; } }
+  @keyframes bel-wiebel { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg) scale(1.03); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    #veeg, #veeg img, .confetti-bit { transition-duration: .01s !important; }
+    .logo, .woordmerk, #startBtn, .b-sticker, #beloning .stralen { animation: none !important; }
+  }
 </style>
 </head>
-<body>
+<body class="voorstart">
 <div id="scenery">
   <svg id="regenboog" viewBox="0 0 200 100" preserveAspectRatio="xMidYMax meet">
     <path d="M15 100 A85 85 0 0 1 185 100" stroke="#ff4136" stroke-width="8" fill="none"/>
@@ -1314,6 +1439,9 @@
   <button id="homeBtn" class="rbtn clickable" title="Overzicht" aria-label="Overzicht">
     <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9h14v-9"/><path d="M10 19v-5h4v5"/></svg>
   </button>
+  <button id="musicBtn" class="rbtn clickable" title="Muziek" aria-label="Muziek">
+    <svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>
+  </button>
   <button id="soundBtn" class="rbtn clickable" title="Geluid" aria-label="Geluid">
     <svg id="soundOn" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a3 3 0 010 6M18.5 7a6 6 0 010 10"/></svg>
   </button>
@@ -1336,17 +1464,20 @@
 </div>
 <div id="load">
   <div class="box">
-    <div class="catload">
-      <svg viewBox="0 0 24 24"><path d="M4 4l3 4M20 4l-3 4M4.5 8C3 10 3 13 4 15c1.2 2.4 4 4 8 4s6.8-1.6 8-4c1-2 1-5-.5-7z"/></svg>
-    </div>
-    <p>Het huis wordt gebouwd<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>
+    <img class="logo" src="icons/icon.svg" alt="" width="160" height="160">
+    <h1 class="woordmerk"><span>Het Huis</span> <span>van Sep</span></h1>
+    <div class="laadbalk" role="progressbar" aria-label="Het huis wordt gebouwd"><i></i></div>
+    <button id="startBtn" type="button" tabindex="-1">
+      <svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>Spelen!
+    </button>
   </div>
 </div>
 
 <div id="app"></div>
 <div id="fx-layer"></div>
 <div id="big-msg"></div>
-<button id="sound-btn" class="icon-btn" title="Geluid aan/uit">🔊</button>
+<button id="sound-btn" class="icon-btn" title="Geluid aan/uit" aria-label="Geluid aan/uit"></button>
+<div id="veeg"><img src="icons/icon.svg" alt=""></div>
 
 <script>
 "use strict";
@@ -1373,9 +1504,23 @@ function shuffle(arr) {
 let audioCtx = null;
 let soundOn = localStorage.getItem("kh_sound") !== "uit";
 
+let master = null, muziekBus = null;
 function ctx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === "suspended") audioCtx.resume();
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // alles loopt via één master-bus met een zachte limiter, zodat
+    // gestapelde geluidjes nooit kraken of te hard worden
+    const comp = audioCtx.createDynamicsCompressor();
+    comp.threshold.value = -16; comp.knee.value = 12; comp.ratio.value = 5;
+    comp.attack.value = 0.004; comp.release.value = 0.18;
+    master = audioCtx.createGain();
+    master.gain.value = 0.9;
+    master.connect(comp).connect(audioCtx.destination);
+    muziekBus = audioCtx.createGain();
+    muziekBus.gain.value = 0;
+    muziekBus.connect(master);
+  }
+  if (audioCtx.state === "suspended" && !document.hidden) audioCtx.resume();
   return audioCtx;
 }
 
@@ -1391,7 +1536,7 @@ function tone(freq, dur = 0.15, { type = "sine", vol = 0.2, delay = 0, glide = n
   g.gain.setValueAtTime(0.0001, t0);
   g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  osc.connect(g).connect(ac.destination);
+  osc.connect(g).connect(master);
   osc.start(t0);
   osc.stop(t0 + dur + 0.05);
 }
@@ -1406,7 +1551,7 @@ function noiseBurst(dur = 0.2, vol = 0.25) {
   src.buffer = buf;
   const g = ac.createGain();
   g.gain.value = vol;
-  src.connect(g).connect(ac.destination);
+  src.connect(g).connect(master);
   src.start();
 }
 
@@ -1418,6 +1563,7 @@ const sfx = {
   oeps()   { tone(300, 0.25, { type: "sine", glide: 200, vol: 0.15 }); },
   miauw()  { tone(700, 0.28, { type: "sawtooth", glide: 420, vol: 0.1 }); tone(1000, 0.2, { type: "sine", glide: 500, vol: 0.08, delay: 0.05 }); },
   boing()  { tone(150, 0.3, { type: "sine", glide: 500, vol: 0.25 }); },
+  woesj()  { tone(240, 0.32, { type: "sine", glide: 760, vol: 0.07 }); },
   toeter() { tone(220, 0.4, { type: "sawtooth", vol: 0.18 }); tone(277, 0.4, { type: "sawtooth", vol: 0.14 }); },
   trommel(){ noiseBurst(0.15, 0.3); tone(90, 0.15, { type: "sine", vol: 0.35 }); },
   bel()    { tone(880, 0.5, { type: "triangle", vol: 0.2 }); tone(1108, 0.5, { type: "triangle", vol: 0.15, delay: 0.25 }); },
@@ -1425,6 +1571,90 @@ const sfx = {
   blaf()   { tone(420, 0.09, { type: "square", glide: 160, vol: 0.22 }); tone(360, 0.1, { type: "square", glide: 140, vol: 0.2, delay: 0.14 }); },
   kwaak()  { tone(300, 0.14, { type: "sawtooth", glide: 200, vol: 0.15 }); },
 };
+
+/* ============================================================
+   Achtergrondmuziek: een zacht speeldoosje (gegenereerd, geen bestanden)
+   Vier akkoorden, een rustige arpeggio en een melodietje dat zichzelf
+   steeds een beetje varieert. Wordt zachter zodra de stem praat.
+   ============================================================ */
+const muziek = {
+  aan: localStorage.getItem("kh_music") !== "uit",
+  timer: null, volgende: 0, stap: 0, frase: null, fraseRondes: 0, ducked: false,
+};
+const MUZ_STAP = 0.3;                                   // achtste noot, 100 bpm
+const MUZ_AKKOORDEN = [[0, 4, 7], [-3, 0, 4], [-7, -3, 0], [-5, -1, 2]];  // C, Am, F, G
+const MUZ_ARP = [0, 1, 2, 1, 0, 2, 1, 2];
+const MUZ_PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19];      // C-pentatonisch vanaf C5
+const hz = halve => 261.63 * Math.pow(2, halve / 12);
+
+function muziekNoot(freq, t, dur, vol, type = "sine") {
+  const ac = audioCtx;
+  const osc = ac.createOscillator(), g = ac.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(g).connect(muziekBus);
+  osc.start(t);
+  osc.stop(t + dur + 0.05);
+}
+function nieuweFrase(oud) {
+  // 32 stappen (4 maten); een wandelingetje over de pentatonische ladder
+  const f = [];
+  let i = oud ? oud.find(n => n !== null) ?? 4 : 4;
+  for (let st = 0; st < 32; st++) {
+    const sterk = st % 4 === 0, half = st % 2 === 0;
+    if (oud && Math.random() < 0.55) { f.push(oud[st]); if (oud[st] !== null) i = oud[st]; continue; }
+    if (Math.random() < (sterk ? 0.9 : half ? 0.5 : 0.14)) {
+      i = Math.max(0, Math.min(MUZ_PENTA.length - 1, i + pick([-2, -1, -1, 1, 1, 2])));
+      f.push(i);
+    } else f.push(null);
+  }
+  f[28] = 2; f[29] = null; f[30] = null; f[31] = null;  // elke frase landt rustig
+  return f;
+}
+function muziekTik() {
+  if (!audioCtx || audioCtx.state !== "running") return;
+  const ac = audioCtx;
+  if (muziek.volgende < ac.currentTime) muziek.volgende = ac.currentTime + 0.06;
+  while (muziek.volgende < ac.currentTime + 0.5) {
+    const st = muziek.stap % 32, t = muziek.volgende;
+    if (st === 0) {
+      if (!muziek.frase || muziek.fraseRondes >= 2) { muziek.frase = nieuweFrase(muziek.frase); muziek.fraseRondes = 0; }
+      muziek.fraseRondes++;
+    }
+    const akk = MUZ_AKKOORDEN[Math.floor(st / 8)];
+    if (st % 8 === 0) muziekNoot(hz(akk[0] - 12), t, 2.2, 0.16);                    // bas
+    muziekNoot(hz(akk[MUZ_ARP[st % 8]]), t, 0.5, 0.05, "triangle");                 // arpeggio
+    const m = muziek.frase[st];
+    if (m !== null) {                                                               // speeldoos-melodie
+      const f = hz(MUZ_PENTA[m] + 12);
+      muziekNoot(f, t, 1.1, 0.11);
+      muziekNoot(f * 2, t, 0.35, 0.025);
+    }
+    muziek.stap++;
+    muziek.volgende += MUZ_STAP;
+  }
+}
+function muziekNiveau() {
+  if (!audioCtx) return;
+  const doel = soundOn && muziek.aan ? (muziek.ducked ? 0.1 : 0.34) : 0;
+  muziekBus.gain.cancelScheduledValues(audioCtx.currentTime);
+  muziekBus.gain.setTargetAtTime(doel, audioCtx.currentTime, 0.25);
+}
+function startMuziek() {
+  ctx();
+  if (!muziek.timer) muziek.timer = setInterval(muziekTik, 120);
+  muziekNiveau();
+}
+function duckMuziek(aan) { muziek.ducked = aan; muziekNiveau(); }
+// geluid stilzetten zodra het tabblad of de tablet naar de achtergrond gaat
+document.addEventListener("visibilitychange", () => {
+  if (!audioCtx) return;
+  if (document.hidden) { audioCtx.suspend(); if ("speechSynthesis" in window) speechSynthesis.cancel(); }
+  else audioCtx.resume();
+});
 
 /* ============================================================
    Nederlandse stem
@@ -1465,7 +1695,11 @@ function speak(text) {
   if (nlVoice) u.voice = nlVoice;
   u.rate = 1;
   u.pitch = 1.04;
+  u.onstart = () => duckMuziek(true);
+  u.onend = u.onerror = () => duckMuziek(false);
   speechSynthesis.speak(u);
+  clearTimeout(speak.vangnet);          // sommige browsers vuren onend nooit af
+  speak.vangnet = setTimeout(() => duckMuziek(false), 9000);
 }
 
 const AANMOEDIGINGEN = [
@@ -1498,18 +1732,27 @@ function bigMsg(text) {
 /* ============================================================
    Effecten: confetti, dingen die voorbij vliegen
    ============================================================ */
-const CONFETTI = ["🎉", "⭐", "🎊", "✨", "🌟", "🟠", "🔵", "🟢", "🟡", "🟣"];
+const CONFETTI = ["#FF5A5F", "#4D96FF", "#FFD93D", "#57C24D", "#F063A8", "#9B5DE5", "#FF9F1C", "#ffffff"];
 function confetti(n = 26) {
   const layer = $("#fx-layer");
+  n = Math.round(n * 2.2);
   for (let i = 0; i < n; i++) {
     const bit = document.createElement("div");
+    const soort = Math.random();
+    const b = 0.9 + Math.random() * 1.1;
     bit.className = "confetti-bit";
-    bit.textContent = pick(CONFETTI);
     bit.style.left = Math.random() * 100 + "vw";
-    bit.style.animationDuration = 1.4 + Math.random() * 1.6 + "s";
-    bit.style.animationDelay = Math.random() * 0.5 + "s";
+    bit.style.width = b + "vmin";
+    bit.style.height = (soort < 0.3 ? b : soort < 0.75 ? b * 0.45 : b * 2.2) + "vmin";
+    bit.style.borderRadius = soort < 0.3 ? "50%" : ".2vmin";
+    bit.style.background = pick(CONFETTI);
+    bit.style.setProperty("--dx", (Math.random() * 24 - 12) + "vw");
+    bit.style.setProperty("--rot", (Math.random() < 0.5 ? -1 : 1) * (360 + Math.random() * 720) + "deg");
+    bit.style.setProperty("--kantel", (2 + Math.random() * 5 | 0) * 180 + "deg");
+    bit.style.animationDuration = 1.6 + Math.random() * 1.8 + "s";
+    bit.style.animationDelay = Math.random() * 0.45 + "s";
     layer.appendChild(bit);
-    setTimeout(() => bit.remove(), 3800);
+    setTimeout(() => bit.remove(), 4200);
   }
 }
 function flyAcross(emoji) {
@@ -1575,8 +1818,25 @@ function awardSticker() {
   saveStickerState(s);
   confetti(40);
   sfx.fanfare();
-  bigMsg(`Sticker! ${emoji}`);
+  toonBeloning(emoji, s.earned);
   speak(`${NAAM}, je hebt een sticker verdiend! Kijk maar in je stickerboek!`);
+}
+
+function toonBeloning(emoji, aantal) {
+  const oud = $("#beloning"); if (oud) oud.remove();
+  const el = document.createElement("div");
+  el.id = "beloning";
+  el.innerHTML = `<div class="stralen"></div>
+    <div class="b-kaart">
+      <div class="b-lint">Nieuwe sticker!</div>
+      <div class="b-sticker"><span>${emoji}</span></div>
+      <div class="b-teller">${aantal} van de ${STICKER_POOL.length} verzameld</div>
+      <div class="b-balk"><i style="width:${aantal / STICKER_POOL.length * 100}%"></i></div>
+    </div>`;
+  document.body.appendChild(el);
+  const weg = () => { el.classList.add("weg"); setTimeout(() => el.remove(), 350); };
+  el.addEventListener("pointerdown", weg);
+  setTimeout(weg, 3200);
 }
 
 /* ============================================================
@@ -1652,7 +1912,37 @@ function gaNaar(naam) {
 /* ============================================================
    Brug tussen het 3D-huis (module) en de 2D-spellen
    ============================================================ */
+const ICOON = {
+  huis: '<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9h14v-9"/><path d="M10 19v-5h4v5"/></svg>',
+  geluidAan: '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a3 3 0 010 6M18.5 7a6 6 0 010 10"/></svg>',
+  geluidUit: '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l4 6M21 9l-4 6"/></svg>',
+};
+// irisveeg: een gekleurde cirkel groeit over het scherm, daarachter wisselt
+// de scène, en dan lost de veeg weer op
+let veegBezig = false;
+function veeg(kleur, wissel) {
+  const w = $("#veeg");
+  if (!w || veegBezig) { wissel(); return; }
+  veegBezig = true;
+  w.style.background = kleur;
+  w.className = "in";
+  setTimeout(() => {
+    try { wissel(); } finally {
+      w.className = "uit";
+      setTimeout(() => { w.className = ""; veegBezig = false; }, 380);
+    }
+  }, 430);
+}
 function launchGame(id) {
+  const kamer = KAMERS.find(k => k.id === id);
+  sfx.woesj();
+  veeg(kamer ? `radial-gradient(circle, ${kamer.licht}, ${kamer.kleur})` : "#4D96FF", () => openSpel(id));
+}
+function backToHouse() {
+  sfx.woesj();
+  veeg("radial-gradient(circle, #BDEAF7, #7FCBEA)", sluitSpel);
+}
+function openSpel(id) {
   document.body.classList.add("in-game");
   $("#app").classList.add("active");
   const ui = document.getElementById("ui"); if (ui) ui.classList.add("hidden");
@@ -1660,7 +1950,7 @@ function launchGame(id) {
   if (window.__hub3d) window.__hub3d.pause();
   gaNaar(id);
 }
-function backToHouse() {
+function sluitSpel() {
   if (huidigeCleanup) { huidigeCleanup(); huidigeCleanup = null; }
   if ("speechSynthesis" in window) speechSynthesis.cancel();
   $("#app").classList.remove("active");
@@ -1675,10 +1965,38 @@ window.KH = {
   launchGame,
   backToHouse,
   get sound() { return soundOn; },
+  // vangnet: zonder WebGL geen 3D-huis, maar wel een gewoon kamermenu
+  zonder3D() {
+    document.body.classList.add("geen3d");
+    const menu = document.createElement("div");
+    menu.id = "menu2d";
+    menu.innerHTML = KAMERS.map(k => `<button data-id="${k.id}" style="--a:${k.licht};--b:${k.kleur};--c:${k.donker}">
+      <span>${k.icon}</span>${k.naam}</button>`).join("");
+    menu.addEventListener("click", e => { const b = e.target.closest("button"); if (b) { sfx.plop(); launchGame(b.dataset.id); } });
+    document.getElementById("ui").appendChild(menu);
+    ["homeBtn", "musicBtn", "hint"].forEach(id => document.getElementById(id)?.remove());
+    const l = document.getElementById("load"), sb = document.getElementById("startBtn");
+    l.classList.add("klaar"); sb.tabIndex = 0;
+    sb.onclick = () => { l.classList.add("weg"); document.body.classList.remove("voorstart"); setTimeout(() => l.remove(), 700); this.begin(); };
+    document.getElementById("soundBtn").onclick = () => $("#sound-btn").click();
+  },
+  get music() { return muziek.aan; },
+  toggleMusic() {
+    muziek.aan = !muziek.aan;
+    localStorage.setItem("kh_music", muziek.aan ? "aan" : "uit");
+    if (muziek.aan) startMuziek(); else muziekNiveau();
+    return muziek.aan;
+  },
+  // eerste tik op "Spelen!": geluid ontgrendelen, muziek aan, welkom heten
+  begin() {
+    if (soundOn) { startMuziek(); sfx.goed(); }
+    setTimeout(() => speak(`Welkom in het huis van ${NAAM}! Tik op een kamer om te spelen.`), 500);
+  },
   toggleSound() {
     soundOn = !soundOn;
     localStorage.setItem("kh_sound", soundOn ? "aan" : "uit");
     updateSoundBtn();
+    if (soundOn) startMuziek(); else muziekNiveau();
     if (!soundOn && "speechSynthesis" in window) speechSynthesis.cancel();
     return soundOn;
   },
@@ -1690,7 +2008,7 @@ window.KH = {
 function roomTop(app, titel, kleur) {
   const top = document.createElement("div");
   top.className = "room-top";
-  top.innerHTML = `<button class="icon-btn" id="back-btn" title="Terug naar het huis">🏠</button>
+  top.innerHTML = `<button class="icon-btn" id="back-btn" title="Terug naar het huis" aria-label="Terug naar het huis">${ICOON.huis}</button>
     <div class="room-title">${titel}</div>`;
   app.appendChild(top);
   $("#back-btn").addEventListener("click", () => { sfx.klik(); backToHouse(); });
@@ -2083,9 +2401,13 @@ scenes.memory = function (app) {
     const kolommen = p === 4 ? 4 : p === 6 ? 4 : 4;
     const rijen = Math.ceil((p * 2) / kolommen);
     grid.style.gridTemplateColumns = `repeat(${kolommen}, var(--card))`;
+    const vmin = Math.min(innerWidth, innerHeight) / 100, tussen = 1.5 * vmin;
+    // binnenmaat van de speeltafel (inset 3%/4% + rand) met wat lucht eromheen
+    const ruimteB = body.clientWidth * 0.92 - 7 * vmin, ruimteH = body.clientHeight * 0.94 - 7 * vmin;
     const kaartMaat = Math.min(
-      (body.clientWidth - 60) / kolommen - 12,
-      (body.clientHeight - 60) / rijen - 12
+      (ruimteB - tussen * (kolommen - 1)) / kolommen,
+      (ruimteH - tussen * (rijen - 1)) / rijen,
+      30 * vmin
     );
     grid.style.setProperty("--card", Math.max(56, kaartMaat) + "px");
 
@@ -2334,9 +2656,9 @@ scenes.puzzel = function (app) {
     const [cols, rows] = grid;
     const totaal = cols * rows;
 
-    const bordMaat = Math.min(body.clientHeight * 0.62, body.clientWidth * 0.55, 460);
+    const bordMaat = Math.min(body.clientHeight * 0.7, body.clientWidth * 0.46, 520);
     const bord = document.createElement("div");
-    bord.style.cssText = `position:absolute; left:3vmin; top:50%; transform:translateY(-56%);
+    bord.style.cssText = `position:absolute; left:max(6vmin, 5%); top:50%; transform:translateY(-52%);
       width:${bordMaat}px; height:${bordMaat}px; border-radius:14px; overflow:hidden;
       border:.6vmin solid #fff;
       box-shadow: 0 .8vmin 0 rgba(0,60,20,.35), 0 1.6vmin 2.6vmin rgba(0,0,0,.25); background:#fff;`;
@@ -2361,7 +2683,8 @@ scenes.puzzel = function (app) {
     let klaar = 0;
 
     const rijenTray = Math.ceil(totaal / 2);
-    const rijAfstand = Math.min(stukH + 12, (body.clientHeight - stukH - 28) / Math.max(1, rijenTray - 1));
+    const randPx = Math.max(24, body.clientHeight * 0.07);   // binnen de lijst van het kurkbord blijven
+    const rijAfstand = Math.min(stukH + 12, (body.clientHeight - stukH - 2 * randPx) / Math.max(1, rijenTray - 1));
     const volgorde = shuffle(Array.from({ length: totaal }, (_, i) => i));
     volgorde.forEach((i, n) => {
       const c = i % cols, r = Math.floor(i / cols);
@@ -2373,9 +2696,9 @@ scenes.puzzel = function (app) {
       stuk.style.borderRadius = "8px";
       stuk.style.overflow = "hidden";
       stuk.style.boxShadow = "0 4px 8px rgba(0,0,0,.3)";
-      const kolomX = body.clientWidth - stukW - 24 - (n % 2) * (stukW + 18);
-      stuk.style.left = Math.max(bordMaat + 40, kolomX - randInt(0, 14)) + "px";
-      stuk.style.top = Math.min(14 + Math.floor(n / 2) * rijAfstand, body.clientHeight - stukH - 10) + "px";
+      const kolomX = body.clientWidth - randPx - stukW - (n % 2) * (stukW + 18);
+      stuk.style.left = Math.max(bord.offsetLeft + bordMaat + 24, kolomX - randInt(0, 14)) + "px";
+      stuk.style.top = Math.min(randPx + Math.floor(n / 2) * rijAfstand, body.clientHeight - stukH - randPx) + "px";
       veld.appendChild(stuk);
 
       maakSleepbaar(stuk, {
@@ -3209,17 +3532,24 @@ scenes.stickers = function (app) {
    Start
    ============================================================ */
 function updateSoundBtn() {
-  $("#sound-btn").textContent = soundOn ? "🔊" : "🔇";
+  $("#sound-btn").innerHTML = soundOn ? ICOON.geluidAan : ICOON.geluidUit;
+  const hub = document.querySelector("#soundBtn svg");
+  if (hub) hub.outerHTML = soundOn ? ICOON.geluidAan : ICOON.geluidUit;
 }
 $("#sound-btn").addEventListener("click", () => {
   soundOn = !soundOn;
   localStorage.setItem("kh_sound", soundOn ? "aan" : "uit");
   updateSoundBtn();
+  if (soundOn) startMuziek(); else muziekNiveau();
   if (soundOn) { sfx.goed(); speak("Geluid staat weer aan!"); }
   else if ("speechSynthesis" in window) speechSynthesis.cancel();
 });
 updateSoundBtn();
 
+// offline spelen: service worker (alleen via http(s), niet vanaf file://)
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
 // het 3D-huis (module hieronder) is de landing; games starten via window.KH
 </script>
 
@@ -3240,6 +3570,10 @@ import { SAOPass } from 'three/addons/postprocessing/SAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// zonder WebGL2 kan het 3D-huis niet bestaan: schakel over op het 2D-kamermenu
+if(!(()=>{try{return !!document.createElement('canvas').getContext('webgl2');}catch(e){return false;}})()){
+  window.KH.zonder3D();throw new Error('WebGL2 niet beschikbaar: 2D-menu actief');}
 
 const COL = {
   cream:'#FFF6E9', creamD:'#F3E4CB', wall:'#FFFDF8',
@@ -4168,13 +4502,16 @@ function yardPoint(from){
   }
   return new THREE.Vector3(from?-from.x:6,0.02,4);
 }
-let resetCam=0,introT=0;const clock=new THREE.Clock();
+let resetCam=0,introT=0,begun=false;const camStart=new THREE.Vector3(2,10,24);const clock=new THREE.Clock();
 function animate(){
   requestAnimationFrame(animate);
   if(paused){return;}
   const dt=Math.min(clock.getDelta(),0.05);const t=clock.elapsedTime;
-  if(introT<1){introT=Math.min(1,introT+dt/1.7);const e=1-Math.pow(1-introT,3);
-    camera.position.lerpVectors(new THREE.Vector3(2,10,24),camEnd,e);camera.lookAt(TARGET);
+  if(!begun){const a=Math.sin(t*0.35)*0.16;
+    camera.position.set(2+Math.sin(a)*24,10+Math.sin(t*0.5)*0.25,Math.cos(a)*24);camera.lookAt(TARGET);
+    camStart.copy(camera.position);
+  } else if(introT<1){introT=Math.min(1,introT+dt/1.9);const e=introT<.5?4*introT*introT*introT:1-Math.pow(-2*introT+2,3)/2;
+    camera.position.lerpVectors(camStart,camEnd,e);camera.lookAt(TARGET);
     if(introT>=1){controls.update();}
   } else if(resetCam>0){resetCam=Math.max(0,resetCam-dt/0.9);
     camera.position.lerp(camEnd,0.08);controls.target.lerp(TARGET,0.1);controls.update();
@@ -4240,6 +4577,32 @@ function animate(){
     z.position.set(-4.25+ph*0.3,0.85+ph*0.9,4.65);z.scale.setScalar(0.22+ph*0.3);z.material.opacity=(1-ph)*(ph<0.08?ph/0.08:1);}
   if(gradePass) gradePass.uniforms.uTime.value=t;
   if(composer) composer.render(); else renderer.render(scene,camera);
+  {const nu=performance.now();bewaakKwaliteit(Math.min(1,(nu-kwVorige)/1000));kwVorige=nu;}
+}
+let kwVorige=performance.now();
+/* Kwaliteitsbewaking: het huis moet op elke tablet soepel draaien.
+   1) geeft de naverwerking een leeg beeld (sommige GPU's), dan gaat die uit;
+   2) zakt de framerate te ver, dan schalen we stap voor stap terug. */
+let kwNiveau=0,kwTijd=0,kwFrames=0,kwCheck=3;
+function fxLeeg(){
+  const gl=renderer.getContext(),w=gl.drawingBufferWidth,h=gl.drawingBufferHeight,px=new Uint8Array(4);let eerste=null;
+  for(let i=0;i<5;i++)for(let j=0;j<4;j++){gl.readPixels((w*(i+.5)/5)|0,(h*(j+.5)/4)|0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,px);
+    const k=px[0]+','+px[1]+','+px[2];if(eerste===null)eerste=k;else if(k!==eerste)return false;}
+  return true;
+}
+function kwOmlaag(){
+  kwNiveau++;
+  if(kwNiveau===1){renderer.setPixelRatio(Math.min(1.25,devicePixelRatio));}
+  else if(kwNiveau===2){composer=null;renderer.setPixelRatio(1);}
+  else if(kwNiveau===3){renderer.shadowMap.enabled=false;scene.traverse(o=>{if(o.material)o.material.needsUpdate=true;});}
+  renderer.setSize(innerWidth,innerHeight);if(composer)composer.setSize(innerWidth,innerHeight);
+}
+function bewaakKwaliteit(dt){
+  if(composer&&kwCheck>0&&--kwCheck===0&&fxLeeg()){console.warn('naverwerking gaf een leeg beeld: uitgezet');composer=null;}
+  if(kwNiveau>=3||document.hidden)return;
+  if(dt>0.3){kwTijd=0;kwFrames=0;return;}  // pauze of tabwissel: opnieuw meten
+  kwTijd+=dt;kwFrames++;
+  if(kwFrames>=70){const fps=kwFrames/kwTijd;kwTijd=0;kwFrames=0;if(fps<26)kwOmlaag();}
 }
 let composer=null,gradePass=null;
 
@@ -4288,8 +4651,16 @@ window.__hub3d={
 await document.fonts.ready.catch(()=>{});
 for(const r of roomObjs){r.panel.material.map=roomTexture(r.room);r.panel.material.emissiveMap=r.panel.material.map;r.panel.material.needsUpdate=true;}
 animate();
-setTimeout(()=>{if(!started){controls.autoRotate=true;}},2000);
-setTimeout(()=>{const l=document.getElementById('load');if(l){l.style.opacity='0';setTimeout(()=>l.remove(),500);}},700);
+// startscherm: het huis is klaar, wacht op de eerste tik (die ook het geluid ontgrendelt)
+{const l=document.getElementById('load'),sb=document.getElementById('startBtn');
+ const start=()=>{if(begun)return;begun=true;kwTijd=0;kwFrames=0;
+   l.classList.add('weg');document.body.classList.remove('voorstart');setTimeout(()=>l.remove(),700);
+   if(window.KH)window.KH.begin();
+   setTimeout(()=>{if(!started){controls.autoRotate=true;}},4200);};
+ setTimeout(()=>{l.classList.add('klaar');sb.tabIndex=0;sb.onclick=start;},350);}
+const musicBtn=document.getElementById('musicBtn');
+if(window.KH&&!window.KH.music)musicBtn.classList.add('uit');
+musicBtn.onclick=()=>{const on=window.KH?window.KH.toggleMusic():true;musicBtn.classList.toggle('uit',!on);pop();};
 </script>
 </body>
 </html>

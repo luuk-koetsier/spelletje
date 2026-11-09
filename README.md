@@ -40,6 +40,23 @@ allemaal door de lucht vliegt!
 
 ## Voor de ouders
 
-- Geluid (stem + effectjes) zet je aan/uit met het knopje rechtsboven.
+- Geluid (stem + effectjes) zet je aan/uit met het knopje rechtsboven. Het
+  muzieknootje ernaast zet alleen het achtergrondmuziekje aan/uit.
 - Voortgang (stickers) wordt op het apparaat zelf bewaard.
-- Geen internet, geen accounts, geen advertenties — één los HTML-bestand.
+- Geen accounts, geen advertenties, geen externe diensten. Ook het lettertype
+  staat lokaal in `vendor/fonts/`.
+- **Als app op de tablet:** open het spel in de browser en kies "Zet op
+  beginscherm". Het start dan schermvullend, met eigen icoon, en werkt daarna
+  ook zonder internet (service worker in `sw.js`).
+
+## Techniek in het kort
+
+- Startscherm met "Spelen!"-knop: die eerste tik ontgrendelt ook het geluid.
+- Alle geluid is gegenereerd met WebAudio (geen bestanden) en loopt via één
+  master-bus met limiter. Het speeldoos-muziekje wordt zachter als de stem praat
+  en stopt als het tabblad naar de achtergrond gaat.
+- Het 3D-huis bewaakt zijn eigen framerate en schaalt stap voor stap terug
+  (resolutie, naverwerking, schaduwen) op tragere apparaten. Zonder WebGL
+  verschijnt automatisch een gewoon 2D-kamermenu.
+- Na een aanpassing aan de bestanden: verhoog `CACHE` in `sw.js`, dan krijgt
+  iedereen gegarandeerd de nieuwe versie.

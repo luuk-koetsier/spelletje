@@ -1,0 +1,17 @@
+{
+  "name": "Het Huis van Sep",
+  "short_name": "Huis van Sep",
+  "description": "Een vrolijk 3D-kattenhuis vol spelletjes: memory, puzzels, vormen, tellen, kleuren en meer.",
+  "lang": "nl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#A9E4F5",
+  "theme_color": "#FF5D8F",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
