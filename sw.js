@@ -2,7 +2,7 @@
    Stale-while-revalidate: meteen uit de cache serveren (dus ook zonder
    internet), en op de achtergrond de nieuwste versie ophalen voor de
    volgende keer. */
-const CACHE = "huis-van-sep-v1";
+const CACHE = "huis-van-sep-v2";
 const KERN = [
   "./",
   "index.html",

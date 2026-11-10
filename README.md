@@ -21,7 +21,7 @@ Vercel), niet met een dubbelklik op het bestand.
 
 | Kamer | Wat doe je er? |
 |---|---|
-| 🎴 Memory | Paartjes zoeken op de speeltafel (4, 6 of 8 paar) |
+| 🎴 Memory | Paartjes zoeken op de speeltafel (4, 6 of 8 paar) met tien eigen getekende plaatjes; de stem noemt wat je vindt |
 | 🧩 Puzzel | Sleep-puzzels van 4, 6 of 9 stukjes; kies zelf uit 5 plaatjes (raket, brandweer, kattenhuis, piratenschip, racebaan) |
 | 🔷 Vormen | Vormen naar de juiste schaduw slepen op het schoolbord |
 | 🔢 Tellen | Tellen in het aquarium: klik het goede cijfer |
