@@ -14,16 +14,6 @@
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="preload" href="vendor/fonts/baloo-2-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="modulepreload" href="vendor/three/build/three.module.js">
-<link rel="modulepreload" href="vendor/three/build/three.core.js">
-<script type="importmap">
-{
-  "imports": {
-    "three": "./vendor/three/build/three.module.js",
-    "three/addons/": "./vendor/three/examples/jsm/"
-  }
-}
-</script>
 <style>
   @font-face { font-family: 'Baloo 2'; font-style: normal; font-weight: 400 800; font-display: swap;
     src: url(vendor/fonts/baloo-2-latin-wght-normal.woff2) format('woff2');
@@ -61,7 +51,7 @@
   #ui { position:fixed; inset:0; pointer-events:none; z-index:10; font-family:'Baloo 2', system-ui, sans-serif; }
   #ui.hidden { display:none; }
   #ui .clickable { pointer-events:auto; }
-  .title-wrap{position:absolute;top:22px;left:26px;display:flex;align-items:center;gap:12px;transform:rotate(-2deg);}
+  .title-wrap{position:absolute;top:calc(22px + env(safe-area-inset-top, 0px));left:calc(26px + env(safe-area-inset-left, 0px));display:flex;align-items:center;gap:12px;transform:rotate(-2deg);}
   .title-badge{width:56px;height:56px;border-radius:50%;background:var(--toy-teal);display:grid;place-items:center;
     box-shadow:0 6px 0 rgba(150,25,80,.5), 0 10px 20px rgba(0,0,0,.15);border:4px solid #fff;}
   .title-badge svg{width:32px;height:32px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
@@ -73,8 +63,21 @@
   .rbtn:hover{transform:translateY(-2px) scale(1.06);}
   .rbtn:active{transform:translateY(2px) scale(.97);box-shadow:0 2px 0 rgba(26,31,29,.14);}
   .rbtn svg{width:26px;height:26px;stroke:var(--toy-teal-d);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
-  #soundBtn{top:24px;right:26px;}
-  #homeBtn{top:24px;right:92px;}
+  #soundBtn{top:calc(24px + env(safe-area-inset-top, 0px));right:calc(26px + env(safe-area-inset-right, 0px));}
+  #homeBtn{top:calc(24px + env(safe-area-inset-top, 0px));right:calc(92px + env(safe-area-inset-right, 0px));}
+  /* Smalle schermen (telefoon staand): kleinere titel op twee regels, zodat hij de knoppen niet raakt
+     en ruim boven de oren van het huis blijft. */
+  @media (max-width: 600px){
+    .title-wrap{top:calc(14px + env(safe-area-inset-top, 0px));left:calc(14px + env(safe-area-inset-left, 0px));gap:8px;
+      max-width:calc(100vw - 150px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));}
+    .title-badge{width:44px;height:44px;flex:none;border-width:3px;box-shadow:0 4px 0 rgba(150,25,80,.5), 0 8px 14px rgba(0,0,0,.15);}
+    .title-badge svg{width:25px;height:25px;}
+    .title-text{font-size:25px;line-height:1.02;}
+    .title-text .nowrap{white-space:nowrap;}
+    .rbtn{width:50px;height:50px;}
+    #soundBtn{top:calc(16px + env(safe-area-inset-top, 0px));right:calc(14px + env(safe-area-inset-right, 0px));}
+    #homeBtn{top:calc(16px + env(safe-area-inset-top, 0px));right:calc(72px + env(safe-area-inset-right, 0px));}
+  }
   #homeBtn svg{stroke:var(--toy-coral);}
   .hint{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;
     background:rgba(255,255,255,.92);padding:10px 20px 10px 16px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.16);
@@ -82,32 +85,33 @@
   .hint svg{width:24px;height:24px;stroke:var(--toy-teal-d);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;
     animation:hintwig 1.8s ease-in-out infinite;}
   @keyframes hintwig{0%,100%{transform:translateX(-5px)}50%{transform:translateX(5px)}}
-  #tip{position:absolute;transform:translate(-50%,-140%);background:#fff;color:#3a2f2a;font-weight:800;font-size:17px;
-    padding:7px 16px;border-radius:999px;white-space:nowrap;box-shadow:0 6px 16px rgba(0,0,0,.2);opacity:0;
+  #tip{position:absolute;transform:translate(-50%,-140%);background:#FFF5F8;color:#7A4E9C;font-weight:800;font-size:17px;
+    padding:6px 16px;border-radius:999px;border:3px solid #fff;white-space:nowrap;box-shadow:0 4px 0 #E3CFF2, 0 8px 16px rgba(90,40,110,.2);opacity:0;
     transition:opacity .12s;pointer-events:none;}
   #tip::after{content:"";position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);
-    border:7px solid transparent;border-top-color:#fff;border-bottom:0;}
-  #modal{position:absolute;inset:0;display:none;place-items:center;background:rgba(26,31,29,.5);backdrop-filter:blur(3px);}
+    border:7px solid transparent;border-top-color:#fff;border-bottom:0;margin-bottom:-3px;}
+  #modal{position:absolute;inset:0;display:none;place-items:center;background:rgba(74,40,96,.42);backdrop-filter:blur(3px);padding:16px;}
   #modal.open{display:grid;}
-  .card{background:#fff;border-radius:28px;padding:36px 40px 32px;max-width:380px;text-align:center;
-    box-shadow:0 24px 60px rgba(0,0,0,.35);animation:pop .32s cubic-bezier(.2,1.3,.4,1);position:relative;overflow:hidden;}
+  /* Pop-upkaartje in het pastelpalet van het huis: een dik, rond speelgoedkaartje met een witte rand. */
+  .card{background:linear-gradient(#FFF5F8,#FBEAF1);border:6px solid #fff;border-radius:40px;padding:34px 38px 30px;max-width:380px;text-align:center;
+    box-shadow:0 10px 0 #E3CFF2, 0 26px 50px rgba(74,40,96,.35);animation:pop .32s cubic-bezier(.2,1.3,.4,1);position:relative;overflow:hidden;}
   @keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
   .card .halo{position:absolute;inset:-40% -10% auto;height:60%;border-radius:50%;opacity:.16;filter:blur(6px);}
   .card .emoji{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;margin:0 auto 18px;
     box-shadow:inset 0 -6px 0 rgba(0,0,0,.12), 0 10px 22px rgba(0,0,0,.18);position:relative;border:5px solid #fff;}
   .card .emoji svg{width:46px;height:46px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
-  .card h2{font-size:30px;font-weight:800;margin:0 0 6px;color:#3a2f2a;}
-  .card p{color:#7c6a5c;font-size:16px;font-weight:500;margin:0 0 24px;line-height:1.4;}
-  .card .play{border:none;border-radius:999px;padding:15px 40px;font-size:19px;font-weight:800;color:#fff;cursor:pointer;
+  .card h2{font-size:32px;font-weight:800;margin:0 0 6px;color:#7A4E9C;}
+  .card p{color:#9A7A9E;font-size:17px;font-weight:600;margin:0 0 24px;line-height:1.4;}
+  .card .play{border:4px solid #fff;border-radius:999px;padding:14px 42px;font-size:21px;font-weight:800;color:#fff;cursor:pointer;
     box-shadow:0 6px 0 rgba(0,0,0,.18), 0 10px 20px rgba(0,0,0,.18);transition:transform .1s;position:relative;font-family:inherit;}
   .card .play:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.18);}
-  .card .close{position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:50%;border:none;background:#efe6dd;
-    cursor:pointer;display:grid;place-items:center;}
-  .card .close svg{width:20px;height:20px;stroke:#6a5442;fill:none;stroke-width:2.6;stroke-linecap:round;}
+  .card .close{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;border:3px solid #fff;background:#EFE3FA;
+    box-shadow:0 3px 0 #D9C4EE;cursor:pointer;display:grid;place-items:center;}
+  .card .close svg{width:20px;height:20px;stroke:#9C7BDB;fill:none;stroke-width:2.8;stroke-linecap:round;}
   #confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
   .conf{position:absolute;top:-20px;width:12px;height:12px;will-change:transform,opacity;}
   @keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:0;}}
-  #load{position:fixed;inset:0;z-index:50;background:linear-gradient(#BFE7F2,#E6F4F1);display:grid;place-items:center;transition:opacity .5s;}
+  #load{position:fixed;inset:0;z-index:50;background:linear-gradient(#BFE3F5,#F6EAF4);display:grid;place-items:center;transition:opacity .5s;}
   #load .box{text-align:center;}
   #load .catload{width:96px;height:96px;margin:0 auto 20px;animation:catbounce 1s ease-in-out infinite;}
   #load .catload svg{width:100%;height:100%;stroke:var(--toy-teal-d);fill:var(--toy-teal);stroke-width:1.5;}
@@ -496,6 +500,7 @@
     position: absolute; bottom: 13%; left: 8%;
     width: 30%; height: 7%;
     border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 40%, var(--c, #ffd93b), var(--c, #ffd93b));
     background: radial-gradient(ellipse at 50% 40%, var(--c, #ffd93b), color-mix(in srgb, var(--c, #ffd93b) 70%, #000 12%));
     opacity: .85;
     box-shadow: inset 0 .3vmin .5vmin rgba(0,0,0,.2);
@@ -877,7 +882,16 @@
     font-size: clamp(34px, 8vmin, 72px);
     filter: drop-shadow(2px 3px 2px rgba(0,0,0,.25));
     line-height: 1;
+    /* groot genoeg tikvlak, en Safari mag de emoji niet als tekst selecteren */
+    display: grid; place-items: center;
+    width: 1.35em; height: 1.35em;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
   }
+  /* op de plank liggen stickers gewoon naast elkaar in het raster, niet op een stapel */
+  #sticker-shelf .sticker.drag-item:not(.dragging) { position: relative; left: auto; top: auto; }
+  #book-wrap > .sticker.dragging { z-index: 60; }
   .sticker-locked {
     font-size: clamp(24px, 5vmin, 46px);
     display: grid; place-items: center;
@@ -1369,19 +1383,15 @@
   @keyframes start-puls { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
   #ui { transition: opacity .7s; }
   body.voorstart #ui { opacity: 0; }
-  #musicBtn { top: 24px; right: 158px; }
+  #musicBtn { top: calc(24px + env(safe-area-inset-top, 0px)); right: calc(158px + env(safe-area-inset-right, 0px)); }
   #musicBtn svg { stroke: var(--toy-purple); }
   .rbtn.uit svg { opacity: .32; }
   .rbtn.uit::after { content: ""; position: absolute; width: 62%; height: 4px; border-radius: 4px; background: var(--toy-coral); transform: rotate(-45deg); }
   .rbtn:focus-visible, .icon-btn:focus-visible, #startBtn:focus-visible, .card .play:focus-visible { outline: 4px solid var(--toy-yellow); outline-offset: 3px; }
-  @media (max-width: 560px) {
-    .title-text { font-size: 22px; } .title-badge { width: 42px; height: 42px; } .title-badge svg { width: 24px; height: 24px; }
-    .title-wrap { top: 14px; left: 14px; gap: 8px; }
-    .rbtn { width: 46px; height: 46px; } .rbtn svg { width: 22px; height: 22px; }
-    #soundBtn { top: 14px; right: 14px; } #homeBtn { top: 14px; right: 68px; } #musicBtn { top: 14px; right: 122px; }
-    .hint { font-size: 14px; bottom: 16px; white-space: nowrap; }
+  /* smal scherm: de muziekknop onder de geluidsknop, zodat de titel zijn ruimte houdt */
+  @media (max-width: 600px) {
+    #musicBtn { top: calc(74px + env(safe-area-inset-top, 0px)); right: calc(14px + env(safe-area-inset-right, 0px)); }
   }
-  @media (max-width: 420px) { .title-text { display: none; } }
 
   /* knoppen in de spelkamers: zelfde familie als het 3D-huis */
   .icon-btn { background: #fff; border: 4px solid #fff; cursor: pointer; flex: 0 0 auto;
@@ -1414,7 +1424,7 @@
   #veeg.uit img { transform: scale(1.25); opacity: 1; transition: transform .36s ease-in; }
 
   /* beloning: nieuwe sticker */
-  #beloning { position: fixed; inset: 0; z-index: 440; display: grid; place-items: center; overflow: hidden; cursor: pointer;
+  #beloning { position: fixed; inset: 0; z-index: 440; display: grid; place-items: center; overflow: hidden; pointer-events: none;
     background: radial-gradient(circle, rgba(40,30,70,.35), rgba(30,20,60,.72)); animation: bel-in .3s both; }
   #beloning.weg { opacity: 0; transition: opacity .33s; pointer-events: none; }
   #beloning .stralen { position: absolute; left: 50%; top: 50%; width: 190vmax; height: 190vmax; margin: -95vmax 0 0 -95vmax;
@@ -1508,7 +1518,7 @@
     <div class="title-badge">
       <svg viewBox="0 0 24 24"><path d="M4 4l3 4M20 4l-3 4M4.5 8C3 10 3 13 4 15c1.2 2.4 4 4 8 4s6.8-1.6 8-4c1-2 1-5-.5-7"/><circle cx="9" cy="12" r=".6" fill="#fff" stroke="none"/><circle cx="15" cy="12" r=".6" fill="#fff" stroke="none"/><path d="M11 15c.6.5 1.4.5 2 0"/></svg>
     </div>
-    <div class="title-text">Het Huis van Sep</div>
+    <div class="title-text">Het Huis <span class="nowrap">van Sep</span></div>
   </div>
   <button id="homeBtn" class="rbtn clickable" title="Overzicht" aria-label="Overzicht">
     <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9h14v-9"/><path d="M10 19v-5h4v5"/></svg>
@@ -1554,6 +1564,24 @@
 <div id="veeg"><img src="icons/icon.svg" alt=""></div>
 
 <script>
+// Laat fouten zien in plaats van dat knoppen stilletjes niets doen,
+// zodat er een foto van gemaakt kan worden.
+function toonFout(msg) {
+  let el = document.getElementById("fout-balk");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "fout-balk";
+    el.style.cssText = "position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#c62317;color:#fff;" +
+      "font:600 14px/1.4 system-ui,sans-serif;padding:10px 40px 10px 14px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.3);";
+    el.addEventListener("click", () => el.remove());
+    document.body.appendChild(el);
+  }
+  el.textContent = "Oeps, er ging iets mis: " + msg + "  (tik om te sluiten)";
+}
+window.addEventListener("error", e => toonFout(e.message || String(e.error)));
+window.addEventListener("unhandledrejection", e => toonFout(String(e.reason && e.reason.message || e.reason)));
+</script>
+<script>
 "use strict";
 
 /* ============================================================
@@ -1561,6 +1589,12 @@
    ============================================================ */
 const $ = sel => document.querySelector(sel);
 const NAAM = "Sep";
+// localStorage kan geblokkeerd zijn (Safari met cookies uit, privévenster, in-app browsers);
+// dan gooit al het aanraken ervan een fout. Nooit het hele spel laten crashen.
+const opslag = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
 const randInt = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 function shuffle(arr) {
@@ -1576,7 +1610,7 @@ function shuffle(arr) {
    Geluid (WebAudio, geen bestanden)
    ============================================================ */
 let audioCtx = null;
-let soundOn = localStorage.getItem("kh_sound") !== "uit";
+let soundOn = opslag.get("kh_sound") !== "uit";
 
 let master = null, muziekBus = null;
 function ctx() {
@@ -1644,6 +1678,10 @@ const sfx = {
   koekoek(){ tone(740, 0.25, { type: "sine", vol: 0.25 }); tone(587, 0.35, { type: "sine", vol: 0.25, delay: 0.3 }); },
   blaf()   { tone(420, 0.09, { type: "square", glide: 160, vol: 0.22 }); tone(360, 0.1, { type: "square", glide: 140, vol: 0.2, delay: 0.14 }); },
   kwaak()  { tone(300, 0.14, { type: "sawtooth", glide: 200, vol: 0.15 }); },
+  // De geluidjes van de bloempot, het vogelhuisje en de gieter uit het oude 2D-huis, met een naam.
+  bloei()  { tone(660, 0.2, { type: "triangle", vol: 0.15 }); tone(880, 0.25, { type: "triangle", vol: 0.15, delay: 0.15 }); },
+  tsjilp() { tone(1200, 0.12, { type: "sine", glide: 1800, vol: 0.15 }); tone(1500, 0.12, { type: "sine", glide: 1000, vol: 0.15, delay: 0.15 }); },
+  gieten() { sfx.plop(); tone(900, 0.3, { type: "sine", glide: 500, vol: 0.1 }); },
 };
 
 /* ============================================================
@@ -1652,7 +1690,7 @@ const sfx = {
    steeds een beetje varieert. Wordt zachter zodra de stem praat.
    ============================================================ */
 const muziek = {
-  aan: localStorage.getItem("kh_music") !== "uit",
+  aan: opslag.get("kh_music") !== "uit",
   timer: null, volgende: 0, stap: 0, frase: null, fraseRondes: 0, ducked: false,
 };
 const MUZ_STAP = 0.3;                                   // achtste noot, 100 bpm
@@ -1726,7 +1764,7 @@ function duckMuziek(aan) { muziek.ducked = aan; muziekNiveau(); }
 // geluid stilzetten zodra het tabblad of de tablet naar de achtergrond gaat
 document.addEventListener("visibilitychange", () => {
   if (!audioCtx) return;
-  if (document.hidden) { audioCtx.suspend(); if ("speechSynthesis" in window) speechSynthesis.cancel(); }
+  if (document.hidden) { audioCtx.suspend(); stopStem(); }
   else audioCtx.resume();
 });
 
@@ -1760,11 +1798,57 @@ if ("speechSynthesis" in window) {
   findVoice();
   speechSynthesis.onvoiceschanged = findVoice;
 }
+// Opgenomen stem: stem/index.json koppelt een zin aan een mp3 (gemaakt met tools/stem-maak.mjs).
+// Staat een zin wel in stem/zinnen.json maar heeft hij nog geen mp3, dan maakt de Vercel-functie
+// api/stem hem met de stem van Luuk. Lukt dat niet, dan spreekt de computerstem de zin uit.
+let stemIndex = {}, stemZinnen = new Set(), stemApiWerkt = true;
+fetch("stem/index.json").then(r => (r.ok ? r.json() : {})).then(j => { stemIndex = j || {}; }).catch(() => {});
+fetch("stem/zinnen.json").then(r => (r.ok ? r.json() : [])).then(j => { stemZinnen = new Set(j || []); }).catch(() => {});
+const stemAudio = new Audio();
+stemAudio.preload = "auto";
+// iOS speelt geluid pas af na een aanraking. Speel bij de eerste tik een stil geluidje af,
+// dan mag dit audio-element daarna ook afspelen vanuit een timer.
+const STIL = "data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA";
+function ontgrendelStem() {
+  removeEventListener("pointerdown", ontgrendelStem, true);
+  if (stemAudio.src) return;
+  stemAudio.src = STIL;
+  const p = stemAudio.play();
+  if (p && p.catch) p.catch(() => {});
+}
+addEventListener("pointerdown", ontgrendelStem, true);
+// het muziekje gaat zachter zolang de opgenomen stem praat
+stemAudio.addEventListener("playing", () => { if (stemAudio.src !== STIL) duckMuziek(true); });
+["pause", "ended", "error"].forEach(ev => stemAudio.addEventListener(ev, () => duckMuziek(false)));
+
 function speak(text) {
+  if (!soundOn) return;
+  const zin = String(text), opname = stemIndex[zin];
+  const viaApi = !opname && stemApiWerkt && stemZinnen.has(zin);
+  if (opname || viaApi) {
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+    stemAudio.pause();
+    stemAudio.src = opname ? "stem/" + opname : "api/stem?zin=" + encodeURIComponent(zin);
+    const p = stemAudio.play();
+    if (p && p.catch) p.catch(e => {
+      if (e && e.name === "AbortError") return; // alweer een nieuwe zin gestart
+      if (viaApi) stemApiWerkt = false; // bv. lokaal zonder Vercel: niet steeds opnieuw proberen
+      spreekMetComputer(text);
+    });
+    return;
+  }
+  spreekMetComputer(text);
+}
+function stopStem() {
+  stemAudio.pause();
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+}
+function spreekMetComputer(text) {
   if (!soundOn || !("speechSynthesis" in window)) return;
   if (!nlVoice) findVoice();
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
+  // Safari leest "Sep" als afkorting van september; "Sepp" klinkt goed en is geen afkorting.
+  const u = new SpeechSynthesisUtterance(String(text).replace(/\bSep\b/g, "Sepp"));
   u.lang = "nl-NL";
   if (nlVoice) u.voice = nlVoice;
   u.rate = 1;
@@ -1874,10 +1958,10 @@ function zwevers(container, emojis, n = 5) {
    ============================================================ */
 const STICKER_POOL = ["🦸", "🚀", "😺", "🚒", "🦖", "⭐", "🏴‍☠️", "⚽", "🌈", "🐬", "🛡️", "🏆", "🐉", "🚁", "🏎️", "🐸", "🎸", "🥇"];
 function stickerState() {
-  try { return JSON.parse(localStorage.getItem("kh_stickers")) || { earned: 0, pos: {} }; }
+  try { return JSON.parse(opslag.get("kh_stickers")) || { earned: 0, pos: {} }; }
   catch { return { earned: 0, pos: {} }; }
 }
-function saveStickerState(s) { localStorage.setItem("kh_stickers", JSON.stringify(s)); }
+function saveStickerState(s) { opslag.set("kh_stickers", JSON.stringify(s)); }
 
 function awardSticker() {
   const s = stickerState();
@@ -1909,8 +1993,7 @@ function toonBeloning(emoji, aantal) {
     </div>`;
   document.body.appendChild(el);
   const weg = () => { el.classList.add("weg"); setTimeout(() => el.remove(), 350); };
-  el.addEventListener("pointerdown", weg);
-  setTimeout(weg, 3200);
+  setTimeout(weg, 2800);
 }
 
 /* ============================================================
@@ -1922,7 +2005,7 @@ function maakSleepbaar(el, { onDrop, onStart } = {}) {
     if (el.classList.contains("locked")) return;
     e.preventDefault();
     if (onStart) onStart(el, e);
-    el.setPointerCapture(e.pointerId);
+    try { el.setPointerCapture(e.pointerId); } catch (err) { /* sommige browsers weigeren dit; slepen werkt dan nog steeds */ }
     el.classList.add("dragging");
     const startLeft = parseFloat(el.style.left) || 0;
     const startTop = parseFloat(el.style.top) || 0;
@@ -1977,7 +2060,7 @@ const scenes = {};
 let huidigeCleanup = null;
 function gaNaar(naam) {
   if (huidigeCleanup) { huidigeCleanup(); huidigeCleanup = null; }
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  stopStem();
   const app = $("#app");
   app.innerHTML = "";
   huidigeCleanup = scenes[naam](app) || null;
@@ -1993,17 +2076,21 @@ const ICOON = {
 };
 // irisveeg: een gekleurde cirkel groeit over het scherm, daarachter wisselt
 // de scène, en dan lost de veeg weer op
-let veegBezig = false;
+let veegWachtrij = null;
 function veeg(kleur, wissel) {
   const w = $("#veeg");
-  if (!w || veegBezig) { wissel(); return; }
-  veegBezig = true;
+  // met ?debug=1 (de tests) wisselt de scène direct, zonder animatie
+  if (!w || /[?&]debug=1\b/.test(location.search)) { wissel(); return; }
+  // komt er een wissel bij terwijl de veeg nog dichtgaat, dan gaat die in dezelfde veeg mee
+  if (veegWachtrij) { veegWachtrij.push(wissel); return; }
+  veegWachtrij = [wissel];
   w.style.background = kleur;
   w.className = "in";
   setTimeout(() => {
-    try { wissel(); } finally {
+    const rij = veegWachtrij; veegWachtrij = null;
+    try { rij.forEach(f => f()); } finally {
       w.className = "uit";
-      setTimeout(() => { w.className = ""; veegBezig = false; }, 380);
+      setTimeout(() => { if (!veegWachtrij) w.className = ""; }, 380);
     }
   }, 430);
 }
@@ -2022,11 +2109,17 @@ function openSpel(id) {
   const ui = document.getElementById("ui"); if (ui) ui.classList.add("hidden");
   const cv = document.getElementById("scene"); if (cv) cv.style.display = "none";
   if (window.__hub3d) window.__hub3d.pause();
-  gaNaar(id);
+  try {
+    gaNaar(id);
+  } catch (err) {
+    // niet op een leeg scherm blijven hangen: terug naar het huis en de fout tonen
+    sluitSpel();
+    toonFout(err.message);
+  }
 }
 function sluitSpel() {
   if (huidigeCleanup) { huidigeCleanup(); huidigeCleanup = null; }
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  stopStem();
   $("#app").classList.remove("active");
   $("#app").innerHTML = "";
   document.body.classList.remove("in-game");
@@ -2057,7 +2150,7 @@ window.KH = {
   get music() { return muziek.aan; },
   toggleMusic() {
     muziek.aan = !muziek.aan;
-    localStorage.setItem("kh_music", muziek.aan ? "aan" : "uit");
+    opslag.set("kh_music", muziek.aan ? "aan" : "uit");
     if (muziek.aan) startMuziek(); else muziekNiveau();
     return muziek.aan;
   },
@@ -2068,15 +2161,22 @@ window.KH = {
   },
   toggleSound() {
     soundOn = !soundOn;
-    localStorage.setItem("kh_sound", soundOn ? "aan" : "uit");
+    opslag.set("kh_sound", soundOn ? "aan" : "uit");
     updateSoundBtn();
     if (soundOn) startMuziek(); else muziekNiveau();
-    if (!soundOn && "speechSynthesis" in window) speechSynthesis.cancel();
+    if (!soundOn) stopStem();
     return soundOn;
   },
   pop() { sfx.plop(); },
   meow() { sfx.miauw(); },
-  say(t) { speak(t); },
+  // Kies een zin, vul de naam in en spreek hem uit (speak zwijgt zelf als het geluid uit staat).
+  say(lines) {
+    const list = Array.isArray(lines) ? lines : [lines];
+    if (!list.length) return;
+    speak(String(pick(list)).replace(/\{NAAM\}/g, NAAM));
+  },
+  // Speel een geluidje uit sfx, alleen als het geluid aan staat en de naam bestaat.
+  sfx(name) { if (soundOn && Object.prototype.hasOwnProperty.call(sfx, name) && typeof sfx[name] === "function") sfx[name](); },
 };
 
 function roomTop(app, titel, kleur) {
@@ -3281,7 +3381,6 @@ scenes.kleuren = function (app) {
     g.fillStyle = "#fff";
     g.fillRect(0, 0, canvas.width, canvas.height);
   }
-  maten();
 
   const tools = $("#paint-tools");
   PALET.forEach(k => {
@@ -3304,6 +3403,9 @@ scenes.kleuren = function (app) {
     b.addEventListener("click", () => { sfx.klik(); dikte = d; });
     tools.appendChild(b);
   });
+  // pas meten als de kleurenbalk er staat, anders is het doek te breed en
+  // komt de verf naast de vinger terecht
+  maten();
 
   function zetPlaat(naam) {
     $("#paint-outline").innerHTML = KLEURPLATEN[naam];
@@ -3324,7 +3426,7 @@ scenes.kleuren = function (app) {
   let tekent = false, vx = 0, vy = 0;
   function pos(e) {
     const r = canvas.getBoundingClientRect();
-    return [e.clientX - r.left, e.clientY - r.top];
+    return [(e.clientX - r.left) * canvas.width / r.width, (e.clientY - r.top) * canvas.height / r.height];
   }
   canvas.addEventListener("pointerdown", e => {
     tekent = true;
@@ -3478,6 +3580,9 @@ scenes.verkleden = function (app) {
     ["ding", "⚔️ Erbij"],
     ["vriend", "🐶 Vriendje"],
   ];
+  // Sticker: wie 4 verschillende soorten kleding heeft uitgeprobeerd, krijgt er een (een keer per bezoek).
+  const uitgeprobeerd = new Set();
+  let stickerGehad = false;
   for (const [sleutel, label] of knoppen) {
     const b = document.createElement("button");
     b.className = "dress-btn";
@@ -3489,6 +3594,8 @@ scenes.verkleden = function (app) {
       const labels = DRESS_LABELS[sleutel];
       const waarde = DRESS_OPTIES[sleutel][staat[sleutel]];
       if (labels && labels[waarde] && waarde !== "geen") speak(labels[waarde].replace(/^\S+\s/, ""));
+      uitgeprobeerd.add(sleutel);
+      if (!stickerGehad && uitgeprobeerd.size >= 4) { stickerGehad = true; setTimeout(() => awardSticker(), 1200); }
     });
     panel.appendChild(b);
   }
@@ -3526,11 +3633,18 @@ scenes.speel = function (app) {
   const grid = $("#busy-grid");
   const noten = [262, 330, 392, 523];
 
+  // Sticker: wie 5 verschillende speeltjes heeft geprobeerd, krijgt er een (een keer per bezoek).
+  const geprobeerd = new Set();
+  let stickerGehad = false;
   function cel(inhoud) {
     const c = document.createElement("div");
     c.className = "busy-cell";
     c.appendChild(inhoud);
     grid.appendChild(c);
+    c.addEventListener("pointerdown", () => {
+      geprobeerd.add(c);
+      if (!stickerGehad && geprobeerd.size >= 5) { stickerGehad = true; setTimeout(() => awardSticker(), 900); }
+    });
     return c;
   }
 
@@ -3681,6 +3795,7 @@ scenes.stickers = function (app) {
   body.innerHTML = `<div id="book-wrap"><div id="sticker-shelf"></div><div id="book-page"></div></div>`;
   const shelf = $("#sticker-shelf");
   const page = $("#book-page");
+  const wrap = $("#book-wrap");
   const s = stickerState();
 
   let ringen = "";
@@ -3711,17 +3826,20 @@ scenes.stickers = function (app) {
     }
     maakSleepbaar(el, {
       onStart() {
+        // Tijdens het slepen hangt de sticker in #book-wrap: die snijdt niets af,
+        // anders dan het blad (overflow: hidden) en de plank (scrollt).
         const r = el.getBoundingClientRect();
-        const pr = page.getBoundingClientRect();
+        const wr = wrap.getBoundingClientRect();
         el.style.position = "absolute";
-        el.style.left = r.left - pr.left + "px";
-        el.style.top = r.top - pr.top + "px";
-        if (el.parentElement !== page) page.appendChild(el);
+        el.style.left = r.left - wr.left + "px";
+        el.style.top = r.top - wr.top + "px";
+        wrap.appendChild(el);
       },
       onDrop() {
         const pr = page.getBoundingClientRect();
         const m = midden(el);
         const er = el.getBoundingClientRect();
+        page.appendChild(el);
         if (m.x < pr.left || m.x > pr.right || m.y < pr.top || m.y > pr.bottom) {
           delete s.pos[el.dataset.i];
           el.style.position = "";
@@ -3770,11 +3888,11 @@ function updateSoundBtn() {
 }
 $("#sound-btn").addEventListener("click", () => {
   soundOn = !soundOn;
-  localStorage.setItem("kh_sound", soundOn ? "aan" : "uit");
+  opslag.set("kh_sound", soundOn ? "aan" : "uit");
   updateSoundBtn();
   if (soundOn) startMuziek(); else muziekNiveau();
   if (soundOn) { sfx.goed(); speak("Geluid staat weer aan!"); }
-  else if ("speechSynthesis" in window) speechSynthesis.cancel();
+  else stopStem();
 });
 updateSoundBtn();
 
@@ -3785,8 +3903,6 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
 // het 3D-huis (module hieronder) is de landing; games starten via window.KH
 </script>
 
-<script type="module">
-/* ============================================================
    HET HUIS VAN SEP — 3D  (Three.js)
    Ontwerp exact overgenomen uit de design-handoff.
    Kamers openen een modal; "Spelen!" start het bijbehorende 2D-spel
@@ -4893,6 +5009,21 @@ animate();
 const musicBtn=document.getElementById('musicBtn');
 if(window.KH&&!window.KH.music)musicBtn.classList.add('uit');
 musicBtn.onclick=()=>{const on=window.KH?window.KH.toggleMusic():true;musicBtn.classList.toggle('uit',!on);pop();};
+=======
+<script type="module">
+// Zonder WebGL2 kan het 3D-huis niet bestaan: toon dan het 2D-kamermenu.
+let kan3D = false;
+try { kan3D = !!document.createElement("canvas").getContext("webgl2"); } catch (e) {}
+if (kan3D) import("./js/house/main.js").catch(e => window.toonFout && toonFout(e.message));
+else window.KH.zonder3D();
+</script>
+<script>
+// Laadt het 3D-huis niet (bijvoorbeeld een te oude browser), laat dat dan zien in plaats van eeuwig te laden.
+setTimeout(function () {
+  if (!window.__hub3d && !document.body.classList.contains("geen3d") && document.getElementById("load") && window.toonFout) {
+    toonFout("het huis kon niet laden op dit apparaat (" + navigator.userAgent.replace(/.*OS ([0-9_]+).*/, "iOS $1") + ")");
+  }
+}, 20000);
 </script>
 </body>
 </html>
